@@ -1,4 +1,4 @@
-<title>Protase</title>
+<title>SAFE</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,14 +77,14 @@ footer{padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);f
 <div class="wrap">
 <header class="hero">
   <p class="kicker">Plan de soins · démonstration</p>
-  <h1>Protase</h1>
+  <h1>SAFE</h1>
   <p class="lede">Le moteur qui lit des règles « si… alors » et prépare, pour chaque patient, les ordonnances, les alertes de prévention et les échéances de suivi.</p>
   <p class="flag"><span aria-hidden="true">⚠</span><span>Patient fictif. Règles non validées cliniquement, à relire par un médecin. Rien n'est branché sur XMed.</span></p>
 </header>
 
 <section id="essai">
   <h2>Essayez sur un patient fictif</h2>
-  <p class="sub">Changez le patient : Protase relit les 12 règles chargées et recalcule ce qui est à faire, au 18/11/2026.</p>
+  <p class="sub">Changez le patient : SAFE relit les 12 règles chargées et recalcule ce qui est à faire, au 18/11/2026.</p>
   <div class="try">
     <div class="panel" aria-label="Patient fictif">
       <h3>Patient</h3>
@@ -116,7 +116,7 @@ footer{padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);f
   <h2>Comment ça marche</h2>
   <p class="sub">Une règle est une donnée (un fichier JSON), pas un programme. Le même moteur lit toutes les règles, à chaque événement choisi dans la règle.</p>
   <div class="flow"><pre class="mermaid">flowchart LR
-  A[Dossier du patient] --> P((Protase))
+  A[Dossier du patient] --> P((SAFE))
   R[Règles si… alors] --> P
   P --> O[Ordonnances pré-remplies]
   P --> V[Alertes de prévention]
@@ -140,10 +140,10 @@ footer{padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);f
   </ol>
 </section>
 
-<footer>Protase est le moteur : en grammaire, la protase est le « si » d'une phrase conditionnelle. SAFE est le générateur de règles : Si · Alors · Faire · Échéance. Démo générée à partir du dépôt du projet.</footer>
+<footer>SAFE : Si · Alors · Faire · Échéance. Le moteur lit les règles, le générateur les écrit. Démo générée à partir du dépôt du projet.</footer>
 </div>
 
-<script>/* Protase — moteur de règles du plan de soins, partagé par generateur/, maquette/ et tests/.
+<script>/* SAFE (Si · Alors · Faire · Échéance) — moteur de règles du plan de soins, partagé par generateur/, maquette/ et tests/.
  * Lit des règles v1 (regles/schema-v1.json) et un patient, produit : évaluation des règles,
  * indicateurs de prévention, plan fusionné (période la plus courte), échéances.
  *
@@ -155,7 +155,7 @@ footer{padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);f
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.Protase = factory();
+  else root.SAFE = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   const UNIT = { semaines: 7, mois: 30.4375, ans: 365.25 };
   const addDays = (s, n) => new Date(new Date(s + 'T00:00:00Z').getTime() + Math.round(n) * 864e5).toISOString().slice(0, 10);
@@ -1135,7 +1135,7 @@ function patient() {
   const age = +$('age').value, drug = DRUGS.find(d => d[0] === $('drug').value), h = $('hba1c').value;
   const suivi = [{date:'2025-11-12', lib:'Cholestérol total', val:3, unit:'g/l'}, {date:'2025-11-12', lib:'Cholestérol LDL', val:1.5, unit:'g/l'}, {date:'2025-06-01', lib:'Hémoglobine', val:12.2, unit:'g/100ml'}];
   if (h !== '') suivi.push({date:'2026-08-08', lib:'HbA1c', val:+h, unit:'%'});
-  return {naissance: Protase.addMonths(TODAY, -12 * age), sexe: $('sexe').value, episodes: $('diab').checked ? [{d:'2025-09-04', l:'Diabète de type 2'}] : [],
+  return {naissance: SAFE.addMonths(TODAY, -12 * age), sexe: $('sexe').value, episodes: $('diab').checked ? [{d:'2025-09-04', l:'Diabète de type 2'}] : [],
     atcdFam: [], documents: [], vaccins: $('dtcap').checked ? [{libelle:'dTcaP'}] : [],
     traitements: drug && drug[0] ? [{label: drug[2], atc: drug[0], debut: TODAY}] : [], suivi};
 }
@@ -1148,7 +1148,7 @@ function table(rows) {
 }
 function renderTry() {
   $('age-out').textContent = $('age').value + ' ans';
-  const C = Protase.planifier(RULES, patient(), {today: TODAY});
+  const C = SAFE.planifier(RULES, patient(), {today: TODAY});
   const fired = C.ev.filter(x => x.ev.ok);
   let h = `<h3>Règles déclenchées (${fired.length} sur ${RULES.length})</h3>` + (fired.length ? `<div class="chips">${fired.map(x => `<span class="chip">${esc(short(x.r))}</span>`).join('')}</div>` : '<p class="empty">Aucune règle ne se déclenche : changez l\'âge, le sexe, le traitement ou l\'HbA1c.</p>');
   if (C.indicateurs.length) h += '<h3>Alertes de prévention</h3>' + C.indicateurs.map(i => `<div class="alert"><span aria-hidden="true">🔔</span><div><b>${esc(i.libelle)}</b><small>${esc(i.r.libelle)}${i.ordonnance ? ' · ordonnance pré-générée : ' + esc(i.ordonnance.examens.join(', ')) : ''}</small></div></div>`).join('');
@@ -1164,7 +1164,7 @@ function renderTry() {
 function ruleHTML(r) {
   const refs = (r.references || []).map(x => x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.libelle)}</a>` : esc(x.libelle));
   return `<details><summary><b>${esc(r.libelle)}</b><span class="pill p-soon">à valider</span></summary><div class="rule">
-    <p><span class="k">SI</span> ${esc(Protase.decrireArbre(r.quand))}</p>${r.alors.map(a => `<p><span class="k">ALORS</span> ${esc(sentAct(a))}</p>`).join('')}
+    <p><span class="k">SI</span> ${esc(SAFE.decrireArbre(r.quand))}</p>${r.alors.map(a => `<p><span class="k">ALORS</span> ${esc(sentAct(a))}</p>`).join('')}
     ${refs.length ? `<p class="meta">Source : ${refs.join(' · ')}</p>` : ''}${(r.points_a_valider || []).map(x => `<div class="todo">À valider : ${esc(x)}</div>`).join('')}</div></details>`;
 }
 const GDESC = {'Règles du document de Fred':'Transcrites du document « Plan de soins », puis migrées au format unique.', 'Cas supplémentaires (sources citées)':'Lues sur des pages officielles ; chaque règle cite sa source.', 'Exemples de la demande initiale':'Les trois exemples donnés à l\'origine (tétanos à 45 ans, diabète, Zyprexa).'};

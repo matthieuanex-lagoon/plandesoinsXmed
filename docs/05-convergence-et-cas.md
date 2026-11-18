@@ -1,6 +1,6 @@
 # Convergence avec le document de Fred + cas supplémentaires
 
-## 1. Convergence : un seul format de règle, un seul moteur (**Protase**)
+## 1. Convergence : un seul format de règle, un seul moteur (**SAFE**)
 
 Avant : la maquette lisait les règles « de Fred » (YAML) avec son propre moteur ; le générateur écrivait un autre format avec un autre évaluateur.
 Maintenant :
@@ -8,12 +8,12 @@ Maintenant :
 | Élément | Rôle |
 |---|---|
 | `regles/schema-v1.json` | **Format unique** de règle (conditions ET/OU/NON → ordonnances / indicateurs) |
-| `protase/protase.js` | **Protase**, le moteur unique, utilisé par le générateur, la maquette et les tests |
+| `safe/safe.js` | Le moteur **SAFE**, utilisé par le générateur, la maquette et les tests |
 | `regles/v1/document-fred/` | Les 4 règles du document, **migrées** depuis `regles/*.yaml` (`python3 tools/migrer_v0_v1.py`) |
 | `regles/v1/cas-supplementaires/` | Nouveaux cas, **avec sources citées** (section 3) |
 | `regles/v1/exemples-generateur/` | Les 3 exemples de la demande initiale (tétanos 45 ans, diabète, Zyprexa) |
 | `tools/build.py` | Valide tout, régénère les données et les deux fichiers « autonomes » |
-| `tests/protase.test.js` | 14 tests (`node tests/protase.test.js`) ; les 9 premiers reproduisent les résultats de l'ancien moteur de la maquette |
+| `tests/safe.test.js` | 14 tests (`node tests/safe.test.js`) ; les 9 premiers reproduisent les résultats de l'ancien moteur de la maquette |
 
 ### Ce que le format v1 couvre maintenant du document de Fred
 
@@ -27,7 +27,7 @@ Maintenant :
 | Requête profil (âge, ATCD familiaux, CR, élément de suivi récent) | conditions `age`, `antecedent_familial`, `compte_rendu`, `element_suivi` + NON |
 | Règle par pathologie / valeur (HbA1c > 7 %) | condition `element_suivi` avec comparaison |
 | Éléments non biologiques → plan de prévention | `categorie` ≠ `biologie` |
-| Plusieurs règles → période la plus courte | Protase (`planifier`) |
+| Plusieurs règles → période la plus courte | moteur SAFE (`planifier`) |
 | Périodicité corrigée par l'utilisateur, règle livrée conservée (droit au remords) | couche `overrides` à part ; la règle n'est jamais modifiée |
 | Périodicité propre à un patient | `patientPer` ; politique « la plus courte » ou « le patient prime » |
 

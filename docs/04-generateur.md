@@ -19,9 +19,9 @@ il sert à *écrire* les règles ; le moteur de XMed (ou la maquette, plus tard)
 ## « Règle, script ou trigger ? »
 
 Ni script ni trigger au sens base de données. Le générateur produit une **règle = une donnée** (un fichier JSON, `regles/schema-v1.json`).
-Un moteur unique, **Protase** (le même pour toutes les règles), la lit à chaque événement coché dans « Évaluée quand » : si les conditions sont vraies, il produit les actions.
+Un moteur unique, **SAFE** (le même pour toutes les règles), la lit à chaque événement coché dans « Évaluée quand » : si les conditions sont vraies, il produit les actions.
 Avantage : modifier une règle ne demande aucun développement, et on peut la désactiver, la versionner, la valider.
-Le banc d'essai contient une version de Protase.
+Le banc d'essai contient une version de SAFE.
 
 ## Les 3 exemples fournis (de votre demande, non validés)
 

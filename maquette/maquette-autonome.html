@@ -49,7 +49,7 @@ h3{margin:14px 0 6px}h3:first-child{margin-top:0}
 <div class="tabs" id="tabs"></div>
 <main id="main"></main>
 <script>
-/* Protase — moteur de règles du plan de soins, partagé par generateur/, maquette/ et tests/.
+/* SAFE (Si · Alors · Faire · Échéance) — moteur de règles du plan de soins, partagé par generateur/, maquette/ et tests/.
  * Lit des règles v1 (regles/schema-v1.json) et un patient, produit : évaluation des règles,
  * indicateurs de prévention, plan fusionné (période la plus courte), échéances.
  *
@@ -61,7 +61,7 @@ h3{margin:14px 0 6px}h3:first-child{margin-top:0}
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.Protase = factory();
+  else root.SAFE = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   const UNIT = { semaines: 7, mois: 30.4375, ans: 365.25 };
   const addDays = (s, n) => new Date(new Date(s + 'T00:00:00Z').getTime() + Math.round(n) * 864e5).toISOString().slice(0, 10);
@@ -916,11 +916,11 @@ function initial(){return{
  patientPer:{},ovr:{},prescrit:{},log:[],hprimDone:false};}
 let S=initial();
 
-/* ===== Protase : moteur partagé (protase/protase.js), règles au format v1 ===== */
-const keyForLabel=l=>Protase.cleDepuisLibelle(l,RULES);
-const age=()=>Protase.age(S,S.today);
+/* ===== SAFE : moteur partagé (safe/safe.js), règles au format v1 ===== */
+const keyForLabel=l=>SAFE.cleDepuisLibelle(l,RULES);
+const age=()=>SAFE.age(S,S.today);
 const patientModel=()=>({...S,vaccins:[],documents:S.coloscopieCR?[{libelle:'Coloscopie',date:S.coloscopieCR}]:[]});
-const compute=()=>Protase.planifier(RULES,patientModel(),{today:S.today,overrides:S.ovr,patientPer:S.patientPer,policy:S.policy,prescrit:S.prescrit});
+const compute=()=>SAFE.planifier(RULES,patientModel(),{today:S.today,overrides:S.ovr,patientPer:S.patientPer,policy:S.policy,prescrit:S.prescrit});
 const trHTML=r=>`<li class="${r.ok?'yes':'no'}">${r.ok?'✔':'✘'} ${esc(r.t)}${r.k?`<ul style="list-style:none;margin:0 0 0 14px;padding:0">${r.k.map(trHTML).join('')}</ul>`:''}</li>`;
 const pending=C=>C.bio.filter(x=>x.st==='late');
 const STL={late:'En retard',soon:'Bientôt',ok:'À jour',presc:'Prescrit',na:'Plan 1ʳᵉ année réalisé'};
@@ -1004,11 +1004,11 @@ function vRegles(C){
  return`<p class="m">Les règles sont <b>livrées</b> (périodicité de gauche, jamais modifiée) ; l'utilisateur saisit une périodicité <b>corrigée</b> (ex. « 6 mois », « 2 ans »). « Restaurer » revient à la règle d'origine (droit au remords). Les règles s'écrivent dans le <b>générateur</b>.</p>`+C.ev.map(({r,ev})=>{
   const lignes=(r.alors||[]).map((a,ai)=>{const o=a.action==='ordonnance'?a:a.ordonnance;
    if(!o)return`<tr><td colspan=5>${a.niveau==='alerte'?'🔔':'ℹ'} Indicateur : <b>${esc(a.libelle)}</b></td></tr>`;
-   return o.examens.map(ex=>{const k=`${r.id}|${ai}|${Protase.nk(ex)}`,ov=S.ovr[k],ch=o.cherche&&o.cherche[ex],f=o.frequence;
+   return o.examens.map(ex=>{const k=`${r.id}|${ai}|${SAFE.nk(ex)}`,ov=S.ovr[k],ch=o.cherche&&o.cherche[ex],f=o.frequence;
     return`<tr><td>${o.phase==='instauration'?'Instauration':o.phase==='entretien'?'Après 1 an':'—'}</td><td>${esc(ch||'—')}</td><td><b>${esc(ex)}</b>${o.categorie!=='biologie'?` <span class="src">${esc(o.categorie)} · prévention</span>`:''}</td><td>${frTxt(f)}${f.max?' <span class="m">(borne basse retenue)</span>':''}</td>
     <td>${f.mode==='tous_les'?`<input size="9" placeholder="—" value="${ov!=null?fmtPer(ov):''}" onchange="const d=parsePer(this.value);if(d)S.ovr['${k}']=d;else delete S.ovr['${k}'];render()"> ${ov!=null?`<button onclick="delete S.ovr['${k}'];render()">Restaurer</button>`:''}`:'<span class="m">—</span>'}</td></tr>`}).join('')}).join('');
   return`<div class="rule"><header><b>${esc(r.libelle)}</b><span><span class="pill ${r.statut_validation==='valide'?'ok':'soon'}">${r.statut_validation==='valide'?'validée':'à valider'}</span> <span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'active pour ce patient':'inactive'}</span></span></header>
-  <div style="padding:6px 10px"><div class="m">SI ${esc(Protase.decrireArbre(r.quand))}</div>
+  <div style="padding:6px 10px"><div class="m">SI ${esc(SAFE.decrireArbre(r.quand))}</div>
   ${(r.references||[]).length?`<div class="m">Sources : ${r.references.map(x=>x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.libelle)}</a>`:esc(x.libelle)).join(' · ')}</div>`:''}
   ${(r.points_a_valider||[]).map(x=>`<div class="note q"><b>À compléter :</b> ${esc(x)}</div>`).join('')}
   <table><tr><th>Phase</th><th>Élément à chercher</th><th>À prescrire</th><th>Périodicité livrée</th><th>Périodicité corrigée</th></tr>${lignes}</table></div></div>`}).join('')}

@@ -1,4 +1,4 @@
-/* Protase — moteur de règles du plan de soins, partagé par generateur/, maquette/ et tests/.
+/* SAFE (Si · Alors · Faire · Échéance) — moteur de règles du plan de soins, partagé par generateur/, maquette/ et tests/.
  * Lit des règles v1 (regles/schema-v1.json) et un patient, produit : évaluation des règles,
  * indicateurs de prévention, plan fusionné (période la plus courte), échéances.
  *
@@ -10,7 +10,7 @@
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.Protase = factory();
+  else root.SAFE = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   const UNIT = { semaines: 7, mois: 30.4375, ans: 365.25 };
   const addDays = (s, n) => new Date(new Date(s + 'T00:00:00Z').getTime() + Math.round(n) * 864e5).toISOString().slice(0, 10);

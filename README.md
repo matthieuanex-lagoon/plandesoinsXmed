@@ -16,9 +16,9 @@ prescription biologique.
 | `docs/02-modele-donnees.md` | Modèle de données et algorithme de fusion des règles |
 | `docs/03-maquette.md` | Maquette interactive : mode d'emploi, scénarios, hypothèses |
 | `maquette/maquette-autonome.html` | **La maquette** (un seul fichier, ouvrir dans un navigateur) |
-| `docs/05-convergence-et-cas.md` | Format unique et Protase, écart avec les sources officielles, cas sourcés |
-| `protase/protase.js` | **Protase**, le moteur de règles (conditions, phases, fusion, échéances) |
-| `tests/protase.test.js` | Tests de Protase (`node tests/protase.test.js`) |
+| `docs/05-convergence-et-cas.md` | Format unique et moteur SAFE, écart avec les sources officielles, cas sourcés |
+| `safe/safe.js` | Le **moteur SAFE** : conditions, phases, fusion, échéances |
+| `tests/safe.test.js` | Tests du moteur SAFE (`node tests/safe.test.js`) |
 | `generateur/index.html` | **Générateur SAFE** (Si · Alors · Faire · Échéance) : éditeur de règles (conditions ET/OU/NON → ordonnances, indicateurs de prévention) |
 | `docs/04-generateur.md` | Générateur : mode d'emploi, modèle, questions ouvertes |
 | `demo/`, `tools/build_demo.py` | Démo publiée (accueil avec essai en direct + maquette + éditeur) ; `python3 tools/build_demo.py` après `tools/build.py` |
@@ -28,13 +28,11 @@ prescription biologique.
 | `regles/schema-v1.json`, `regles/v1/` | Format de règle unique ; `document-fred/`, `cas-supplementaires/` (sourcés), `exemples-generateur/` |
 | `regles/*.yaml` | Les 4 exemples du document, transcrits tels quels |
 
-## Nom du moteur : Protase
+## Nom : SAFE
 
-**Protase** désigne le moteur qui lit les règles « si… alors » et produit ordonnances, alertes et échéances. En grammaire, la *protase* est la proposition conditionnelle (le « si ») d'une phrase ; l'*apodose* est la conséquence (le « alors »).
-
-## Nom du générateur : SAFE
-
-**SAFE** = **S**i · **A**lors · **F**aire · **É**chéance. C'est l'éditeur de règles : on y écrit la condition, l'action (ordonnance, alerte) et le rythme de suivi, puis on teste la règle sur un patient fictif. Protase est le moteur qui lit ces règles.
+**SAFE** = **S**i · **A**lors · **F**aire · **É**chéance : une condition, une action (ordonnance, alerte), puis la date du prochain suivi. Le nom couvre l'ensemble :
+- le **moteur SAFE** (`safe/safe.js`) lit les règles et produit ordonnances, alertes et échéances ;
+- le **Générateur SAFE** (`generateur/`) sert à écrire et tester les règles.
 
 ## Principe de prudence
 

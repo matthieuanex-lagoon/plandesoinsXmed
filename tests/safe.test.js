@@ -1,5 +1,5 @@
-// node tests/protase.test.js — non-régression du moteur partagé (valeurs de référence = anciennes sorties de la maquette)
-const assert = require('assert'), fs = require('fs'), path = require('path'), M = require('../protase/protase.js');
+// node tests/safe.test.js — non-régression du moteur partagé (valeurs de référence = anciennes sorties de la maquette)
+const assert = require('assert'), fs = require('fs'), path = require('path'), M = require('../safe/safe.js');
 const load = d => fs.readdirSync(path.join(__dirname, '../regles/v1', d)).filter(f => f.endsWith('.json')).map(f => JSON.parse(fs.readFileSync(path.join(__dirname, '../regles/v1', d, f))));
 const FRED = load('document-fred'), EX = load('exemples-generateur');
 const patient = () => ({ naissance: '1980-11-12', sexe: '', episodes: [{ d: '2025-08-24', l: 'Tabagisme' }, { d: '2025-09-04', l: 'Diabète de type 2' }, { d: '2026-11-12', l: 'Coronaropathie' }],

@@ -3,17 +3,17 @@
 Prérequis : python3 tools/build.py (données + versions autonomes à jour)."""
 import json, os
 os.makedirs("demo/artifact", exist_ok=True)
-protase = open("protase/protase.js").read()
+safe = open("safe/safe.js").read()
 biblio = open("generateur/bibliotheque-data.js").read().split("window.BIBLIOTHEQUE = ", 1)[1].rstrip().rstrip(";")
 tpl = open("demo/index.tpl.html").read()
-assert "/*PROTASE*/" in tpl and "/*BIBLIO*/" in tpl
-open("demo/artifact/index.html", "w").write(tpl.replace("/*PROTASE*/", protase).replace("/*BIBLIO*/", biblio))
+assert "/*SAFE*/" in tpl and "/*BIBLIO*/" in tpl
+open("demo/artifact/index.html", "w").write(tpl.replace("/*SAFE*/", safe).replace("/*BIBLIO*/", biblio))
 
 def patch(h, pairs):
     for a, b in pairs:
         assert h.count(a) == 1, (h.count(a), a[:70]); h = h.replace(a, b)
     return h
-back = '<a href="index.html" style="color:var(--blu);text-decoration:none;font-weight:600">← Démo Protase</a> '
+back = '<a href="index.html" style="color:var(--blu);text-decoration:none;font-weight:600">← Démo SAFE</a> '
 # Maquette : lien retour + scénarios par ancre (#plan, #lamotrigine, #lithium, #hprim, #regles)
 m = open("maquette/maquette-autonome.html").read()
 m = patch(m, [('<div class="top"><b>XMed — Plan de soins</b>', '<div class="top">' + back + '<b>XMed — Plan de soins</b>'),
