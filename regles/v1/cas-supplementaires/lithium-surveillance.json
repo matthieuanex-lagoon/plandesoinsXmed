@@ -64,15 +64,15 @@
       "frequence": {
         "mode": "jalons",
         "jalons": [
-          "S1",
-          "S2"
+          "J7",
+          "J14"
         ]
       }
     }
   ],
   "points_a_valider": [
     "Source = RCP de TERALITHE LP 400 mg uniquement : vérifier les autres spécialités contenant du lithium.",
-    "Lithiémies à J7, J14 « et si nécessaire J21 » : J21 non représenté.",
+    "Lithiémies à J7, J14 « et si nécessaire J21 » : J21 non représenté (à ajouter comme jalon J21 si le médecin le souhaite).",
     "Après lithiémie efficace : « toutes les semaines pendant le premier mois », puis mensuelle pendant le premier trimestre, puis tous les deux mois. Le point de départ (date d'obtention de la lithiémie efficace) n'est pas représentable : non encodé.",
     "Pendant le traitement, le RCP demande des « contrôles réguliers » de la créatininémie et de la calcémie, une surveillance régulière de l'ECG et de la TSH, sans donner de fréquence : à définir par le médecin (rien n'est inventé ici).",
     "Le bilan « avant le traitement » est placé à T0 (date de début) : à affiner.",

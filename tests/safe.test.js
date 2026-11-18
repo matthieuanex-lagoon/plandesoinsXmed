@@ -70,10 +70,10 @@ t('règle désactivée : ignorée', () => {
 const CAS = load('cas-supplementaires');
 t('cas sourcés : dépistage du sein (femme 50–74 ans) → mammographie tous les 2 ans', () => {
   const P = patient(); P.sexe = 'F'; P.naissance = '1974-01-01';
-  const w = M.planifier(CAS, P, ctx()).prev.find(x => x.label === 'Mammographie'); assert.ok(w); assert.strictEqual(w.days, 731); assert.strictEqual(w.st, 'late');
-  P.sexe = 'M'; assert.ok(!M.planifier(CAS, P, ctx()).prev.some(x => x.label === 'Mammographie'));
-  P.sexe = 'F'; P.naissance = '1950-01-01'; assert.ok(!M.planifier(CAS, P, ctx()).prev.some(x => x.label === 'Mammographie'));
-  P.naissance = '1974-01-01'; P.suivi.push({ date: '2026-03-01', lib: 'Mammographie', val: 'ok', unit: '' }); assert.strictEqual(M.planifier(CAS, P, ctx()).prev.find(x => x.label === 'Mammographie').due, '2028-03-01');
+  const w = M.planifier(CAS, P, ctx()).imagerie.find(x => x.label === 'Mammographie'); assert.ok(w); assert.strictEqual(w.days, 731); assert.strictEqual(w.st, 'late');
+  P.sexe = 'M'; assert.ok(!M.planifier(CAS, P, ctx()).imagerie.some(x => x.label === 'Mammographie'));
+  P.sexe = 'F'; P.naissance = '1950-01-01'; assert.ok(!M.planifier(CAS, P, ctx()).imagerie.some(x => x.label === 'Mammographie'));
+  P.naissance = '1974-01-01'; P.suivi.push({ date: '2026-03-01', lib: 'Mammographie', val: 'ok', unit: '' }); assert.strictEqual(M.planifier(CAS, P, ctx()).imagerie.find(x => x.label === 'Mammographie').due, '2028-03-01');
 });
 t('cas sourcés : col de l\'utérus 25–29 (cytologie 3 ans) et 30–65 (HPV-HR 5 ans)', () => {
   const P = patient(); P.sexe = 'F'; P.naissance = '1999-01-01';
@@ -97,5 +97,17 @@ t('toutes les règles ont un id unique et sont documentées (a_valider ou valide
   const all = [...FRED, ...CAS, ...EX], ids = all.map(r => r.id); assert.strictEqual(new Set(ids).size, ids.length);
   all.forEach(r => assert.ok(['a_valider', 'valide'].includes(r.statut_validation)));
   CAS.forEach(r => assert.ok(r.references && r.references.length && r.references[0].url, r.id + ' sans source'));
+});
+t('catégories : biologie / imagerie / traitement / prévention séparées ; jalons en jours (J7)', () => {
+  const r = { id: 'x', libelle: 'x', actif: true, evaluer_quand: ['quotidien'], quand: { op: 'ET', conditions: [{ type: 'age', op: '>=', valeur: 18 }] }, alors: [
+    { action: 'ordonnance', categorie: 'biologie', examens: ['NFS'], frequence: { mode: 'jalons', jalons: ['T0', 'J7'] } },
+    { action: 'ordonnance', categorie: 'imagerie', examens: ['Radio thorax'], frequence: { mode: 'une_fois' } },
+    { action: 'ordonnance', categorie: 'traitement', examens: ['Metformine 500 mg'], frequence: { mode: 'une_fois' } },
+    { action: 'ordonnance', categorie: 'vaccin', examens: ['Vaccin X'], frequence: { mode: 'une_fois' } }] };
+  const C = M.planifier([r], patient(), ctx());
+  assert.deepStrictEqual([C.bio, C.imagerie, C.traitement, C.prev].map(a => a.map(w => w.label)), [['NFS'], ['Radio thorax'], ['Metformine 500 mg'], ['Vaccin X']]);
+  assert.strictEqual(M.jalonJours('J7'), 7); assert.strictEqual(C.bio[0].jal.length, 2);
+  const P = patient(); P.traitements.push({ label: 'METFORMINE 500 MG CPR', atc: null, debut: '2026-11-01' });
+  const w = M.planifier([r], P, ctx()).traitement[0]; assert.strictEqual(w.st, 'na'); // déjà prescrit : rien à générer
 });
 console.log(`\n${n} tests passés`);

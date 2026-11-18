@@ -122,7 +122,7 @@ function bannerPending(C){const n=pending(C).length;return C.indicateurs.map(i=>
 function vDossier(C){
  const trs=S.traitements.map(t=>{const hit=C.ev.find(x=>x.ev.ok&&x.ev.treat===t);return`<tr class="${hit?'rowhl':''}"><td>${fr(t.debut)}</td><td>${esc(t.label)}${hit?`<br><span class="src">Règle : ${esc(hit.r.libelle)}</span>`:''}</td></tr>`}).join('');
  const sv=[...S.suivi].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<tr><td>${fr(x.date)}</td><td class="${x.hi?'r':''}">${esc(x.lib)}</td><td class="num ${x.hi?'r':''}">${esc(x.val)}</td><td>${esc(x.unit)}</td><td>${x.prochain?fr(x.prochain):''}</td></tr>`).join('');
- const prev=C.prev.map(w=>`<tr><td>${esc(w.label)}</td><td>${w.due?fr(w.due):''}</td><td>${pill(w)}</td></tr>`).join('')||'<tr><td colspan=3 class="m">Aucun élément non biologique proposé</td></tr>';
+ const prev=[...C.imagerie,...C.traitement,...C.prev].map(w=>`<tr><td>${esc(w.label)}</td><td>${w.due?fr(w.due):''}</td><td>${pill(w)}</td></tr>`).join('')||'<tr><td colspan=3 class="m">Aucun élément non biologique proposé</td></tr>';
  return bannerPending(C)+`<div class="grid">
  <div class="pn"><h4 class="h-cy">Identité</h4><table><tr><td>Né(e) le</td><td>${fr(S.naissance)} (${age()} ans)</td></tr><tr><td>Patient</td><td>DOE John — fictif</td></tr></table></div>
  <div class="pn"><h4 class="h-sage">Épisodes et suivis en cours</h4><table>${S.episodes.map(e=>`<tr><td>${fr(e.d)}</td><td>${esc(e.l)}</td></tr>`).join('')}</table></div>
@@ -133,11 +133,11 @@ function vDossier(C){
 
 function vPlan(C){
  const rows=C.bio.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?`${fr(w.last.date)} — ${esc(w.last.val)} ${esc(w.last.unit)}`:'<span class="m">aucun résultat</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}${w.prescrit?`<br><span class="m">le ${fr(w.prescrit)}</span>`:''}</td></tr>`).join('');
- const rowsP=C.prev.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?fr(w.last.date):'<span class="m">—</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}</td></tr>`).join('');
+ const rowsP=[...C.imagerie,...C.traitement,...C.prev].map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?fr(w.last.date):'<span class="m">—</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}</td></tr>`).join('');
  const rl=C.ev.map(({r,ev})=>`<div style="margin:4px 0"><span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'Déclenchée':'Non déclenchée'}</span> <b>${esc(r.libelle)}</b><ul class="crit" style="margin:2px 0 0 18px;padding:0;list-style:none">${ev.inactive?'<li class="m">règle désactivée</li>':trHTML(ev)}</ul></div>`).join('');
  return bannerPending(C)+`<h3>Plan de soins — biologie</h3><div class="scroll"><table><tr><th>Élément à prescrire</th><th>Règles à l'origine</th><th>Périodicité retenue</th><th>Dernier résultat (éléments de suivi)</th><th>Échéance</th><th>Statut</th></tr>${rows||'<tr><td colspan=6 class="m">Aucune règle déclenchée</td></tr>'}</table></div>
  <div class="note"><b>Fusion :</b> quand plusieurs règles concernent le même élément, on retient la période la plus courte (document) ; la périodicité saisie pour le patient est prise en compte selon le réglage du simulateur. Le <b>dernier résultat</b> est lu dans les éléments de suivi — pas de source parallèle. Cadre orange = périodicité corrigée par l'utilisateur.</div>
- <h3>Plan de prévention — éléments non biologiques</h3><div class="scroll"><table><tr><th>Examen</th><th>Règles à l'origine</th><th>Périodicité</th><th>Dernier fait</th><th>Échéance</th><th>Statut</th></tr>${rowsP||'<tr><td colspan=6 class="m">—</td></tr>'}</table></div>
+ <h3>Imagerie, traitements et prévention — éléments non biologiques</h3><div class="scroll"><table><tr><th>Examen</th><th>Règles à l'origine</th><th>Périodicité</th><th>Dernier fait</th><th>Échéance</th><th>Statut</th></tr>${rowsP||'<tr><td colspan=6 class="m">—</td></tr>'}</table></div>
  <div class="note q"><b>À valider :</b> le classement « non biologique » (ECG, recherche de sang dans les selles) est une hypothèse de la maquette, d'après vos captures (ces examens figurent dans Prévention).</div>
  <h3>Évaluation des règles pour ce patient</h3>${rl}`}
 

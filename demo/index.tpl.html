@@ -144,11 +144,14 @@ const DRUGS = [['', 'Aucun traitement concerné', ''], ['N03AX09', 'Lamotrigine 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fr = s => s ? s.split('-').reverse().join('/') : '';
-const CATS = {biologie:'biologie', imagerie:'imagerie', vaccin:'vaccin', consultation:'consultation', autre:'prévention'};
+const CATS = {biologie:'biologie', imagerie:'imagerie', traitement:'traitement', vaccin:'vaccin', consultation:'consultation', autre:'prévention'};
+const DE = c => /^[aeiouyéèh]/i.test(c) ? "d'" + c : 'de ' + c;
 const UNI1 = {semaines:'toutes les semaines', mois:'tous les mois', ans:'tous les ans'};
-const freq = f => f.mode === 'une_fois' ? 'une seule fois' : f.mode === 'tous_les' ? (+f.valeur === 1 && !f.max ? UNI1[f.unite] : `tous les ${f.valeur}${f.max ? ' à ' + f.max : ''} ${f.unite}`) : 'aux jalons ' + (f.jalons || []).join(', ');
+const jalLabel = j => { if (j === 'T0') return 'à l\'instauration'; const m = /^([JSM])(\d+)(?:-(\d+))?$/.exec(j); if (!m) return j; const u = {J:['jour','jours'], S:['semaine','semaines'], M:['mois','mois']}[m[1]]; return 'après ' + (m[3] ? `${m[2]} à ${m[3]} ${u[1]}` : `${m[2]} ${+m[2] > 1 ? u[1] : u[0]}`); };
+const jalShort = jalLabel;
+const freq = f => f.mode === 'une_fois' ? 'une seule fois' : f.mode === 'tous_les' ? (+f.valeur === 1 && !f.max ? UNI1[f.unite] : `tous les ${f.valeur}${f.max ? ' à ' + f.max : ''} ${f.unite}`) : (f.jalons || []).map(jalShort).join(', ');
 const PH = {instauration:' (à l\'instauration)', entretien:' (après 1 an de traitement)'};
-const sentOrd = o => `ordonnance de ${CATS[o.categorie]}${PH[o.phase] || ''} : ${o.examens.join(', ')} — ${freq(o.frequence)}`;
+const sentOrd = o => `ordonnance ${DE(CATS[o.categorie])}${PH[o.phase] || ''} : ${o.examens.join(', ')} — ${freq(o.frequence)}`;
 const sentAct = a => a.action === 'ordonnance' ? 'générer une ' + sentOrd(a) : `afficher ${a.niveau === 'alerte' ? 'l\'alerte' : 'l\'information'} « ${a.libelle} »` + (a.ordonnance ? ' et pré-générer une ' + sentOrd(a.ordonnance) : '');
 
 /* ---- Essai en direct ---- */
@@ -177,7 +180,9 @@ function renderTry() {
   const bio = C.bio, late = bio.filter(w => w.st === 'late'), later = bio.filter(w => w.st !== 'late');
   if (late.length) h += `<h3>Biologie à prescrire maintenant (${late.length})</h3>` + table(late);
   if (later.length) h += '<h3>Biologie à venir</h3>' + table(later);
-  if (C.prev.length) h += '<h3>Prévention : examens non biologiques</h3>' + table(C.prev);
+  if (C.imagerie.length) h += '<h3>Imagerie</h3>' + table(C.imagerie);
+  if (C.traitement.length) h += '<h3>Traitements à prescrire</h3>' + table(C.traitement);
+  if (C.prev.length) h += '<h3>Vaccins, dépistages et prévention</h3>' + table(C.prev);
   $('out').innerHTML = h;
 }
 ['age', 'sexe', 'drug', 'hba1c', 'diab', 'dtcap'].forEach(id => $(id).addEventListener('input', renderTry));

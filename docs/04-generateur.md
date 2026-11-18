@@ -8,7 +8,8 @@ il sert à *écrire* les règles ; le moteur de XMed (ou la maquette, plus tard)
 1. **SI** — on construit des conditions, combinables avec **ET / OU / NON** (groupes imbriqués possibles) :
    âge, sexe, pathologie/épisode, médicament (nom et/ou ATC), élément de suivi ou résultat de biologie (existe / absent / valeur > < =, sur les N derniers mois), vaccin fait / non fait.
 2. **ALORS** — on choisit ce que la règle produit :
-   - une **ordonnance** (biologie, imagerie, vaccin, autre) avec ses éléments et sa fréquence (une fois / tous les x semaines-mois-ans / jalons T0, M6…) ;
+   - une **ordonnance** par type, ajoutée d'un clic : **biologie**, **imagerie**, **traitement** (médicaments), vaccin, autre (dépistage, consultation…). Chaque type a ses libellés ; un traitement déjà pris par le patient n'est pas re-généré ;
+   - une fréquence : une seule fois, tous les x semaines / mois / ans, ou **à des jalons**. Les jalons se construisent par clics : « À l'instauration », « + 7 jours », « + 1 mois »…, plus un délai libre (jours, semaines, mois). Ils s'affichent en puces triées avec leur date d'exemple, et se retirent d'un clic. Formats stockés : `T0`, `J7` (jours), `S2` ou `S2-4` (semaines), `M6` (mois) ;
    - un **indicateur de prévention** (alerte ou information) avec, au choix, une **ordonnance pré-générée**.
 3. **Évaluée quand** — ouverture du dossier, prescription d'un médicament, intégration d'un résultat HPRIM, traitement quotidien.
 4. **Activée / désactivée** par règle.

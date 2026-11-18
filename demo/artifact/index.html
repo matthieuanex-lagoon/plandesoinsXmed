@@ -231,8 +231,15 @@ footer{padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);f
     return null;
   }
 
+  // Un « traitement » à générer est déjà fait si le patient le prend : sa date de début joue le rôle du dernier résultat
+  function dernierTraitement(P, nom) {
+    const t = P.traitements.filter(x => norm(x.label).includes(norm(nom))).sort((a, b) => b.debut.localeCompare(a.debut))[0];
+    return t ? { date: t.debut, lib: t.label, val: t.label, unit: '' } : undefined;
+  }
+
   /* ---- Fréquences ---- */
-  const jalonJours = j => j === 'T0' ? 0 : j[0] === 'M' ? Math.round(+j.slice(1) * 30.4375) : +j.slice(1).split('-')[0] * 7; // Sn ou Sn-m : semaines, borne basse
+  // T0 = début ; Jn = n jours ; Sn ou Sn-m = semaines (borne basse) ; Mn = n mois
+  const jalonJours = j => j === 'T0' ? 0 : j[0] === 'J' ? +j.slice(1) : j[0] === 'M' ? Math.round(+j.slice(1) * 30.4375) : +j.slice(1).split('-')[0] * 7;
   const frequenceJours = f => Math.round(f.valeur * UNIT[f.unite]);
 
   /* ---- Correspondances « élément cherché » ↔ « élément à prescrire » ---- */
@@ -263,7 +270,7 @@ footer{padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);f
         const o = a.action === 'ordonnance' ? a : a.ordonnance; if (!o) return;
         if (o.phase === 'instauration' && !inst) return;
         if (o.phase === 'entretien' && inst) return;
-        const canal = o.categorie === 'biologie' ? 'biologie' : 'prevention', f = o.frequence;
+        const canal = { biologie: 'biologie', imagerie: 'imagerie', traitement: 'traitement' }[o.categorie] || 'prevention', f = o.frequence;
         o.examens.forEach(ex => {
           const w = ensure(ex, canal), ch = o.cherche && o.cherche[ex];
           if (f.mode === 'tous_les') { const k = `${r.id}|${ai}|${nk(ex)}`, livre = frequenceJours(f), ov = overrides[k];
@@ -276,7 +283,7 @@ footer{padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);f
     const rows = Object.values(map);
     for (const w of rows) {
       const labels = [...new Set([...w.srcs.map(s => s.ch).filter(Boolean), ...(presc2ch[w.key] || []), w.label])];
-      w.last = lastOf(P, labels, today);
+      w.last = w.canal === 'traitement' ? dernierTraitement(P, w.label) : lastOf(P, labels, today);
       const per = w.srcs.filter(s => s.days).map(s => s.days), pat = patientPer[w.key]; w.pat = pat;
       let pd = per.slice(); if (pat != null) pd = ctx.policy === 'patient' ? [pat] : [...pd, pat];
       const c = []; w.never = false; w.jal = []; w.planDone = false;
@@ -293,7 +300,7 @@ footer{padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);f
       w.st = !w.due ? 'na' : w.prescrit ? 'presc' : w.due <= today ? 'late' : w.due <= addDays(today, 30) ? 'soon' : 'ok';
     }
     rows.sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
-    return { ev, rows, bio: rows.filter(x => x.canal === 'biologie'), prev: rows.filter(x => x.canal === 'prevention'), indicateurs };
+    return { ev, rows, bio: rows.filter(x => x.canal === 'biologie'), imagerie: rows.filter(x => x.canal === 'imagerie'), traitement: rows.filter(x => x.canal === 'traitement'), prev: rows.filter(x => x.canal === 'prevention'), indicateurs };
   }
   return { planifier, evalArbre, evalCondition, decrireArbre, decrireCondition, cleDepuisLibelle, correspondances,
     traitementDeclencheur, age, norm, nk, addDays, addMonths, diffDays, frequenceJours, jalonJours, UNIT };
@@ -871,15 +878,15 @@ const BIB = [
       "frequence": {
        "mode": "jalons",
        "jalons": [
-        "S1",
-        "S2"
+        "J7",
+        "J14"
        ]
       }
      }
     ],
     "points_a_valider": [
      "Source = RCP de TERALITHE LP 400 mg uniquement : vérifier les autres spécialités contenant du lithium.",
-     "Lithiémies à J7, J14 « et si nécessaire J21 » : J21 non représenté.",
+     "Lithiémies à J7, J14 « et si nécessaire J21 » : J21 non représenté (à ajouter comme jalon J21 si le médecin le souhaite).",
      "Après lithiémie efficace : « toutes les semaines pendant le premier mois », puis mensuelle pendant le premier trimestre, puis tous les deux mois. Le point de départ (date d'obtention de la lithiémie efficace) n'est pas représentable : non encodé.",
      "Pendant le traitement, le RCP demande des « contrôles réguliers » de la créatininémie et de la calcémie, une surveillance régulière de l'ECG et de la TSH, sans donner de fréquence : à définir par le médecin (rien n'est inventé ici).",
      "Le bilan « avant le traitement » est placé à T0 (date de début) : à affiner.",
@@ -1114,11 +1121,14 @@ const DRUGS = [['', 'Aucun traitement concerné', ''], ['N03AX09', 'Lamotrigine 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fr = s => s ? s.split('-').reverse().join('/') : '';
-const CATS = {biologie:'biologie', imagerie:'imagerie', vaccin:'vaccin', consultation:'consultation', autre:'prévention'};
+const CATS = {biologie:'biologie', imagerie:'imagerie', traitement:'traitement', vaccin:'vaccin', consultation:'consultation', autre:'prévention'};
+const DE = c => /^[aeiouyéèh]/i.test(c) ? "d'" + c : 'de ' + c;
 const UNI1 = {semaines:'toutes les semaines', mois:'tous les mois', ans:'tous les ans'};
-const freq = f => f.mode === 'une_fois' ? 'une seule fois' : f.mode === 'tous_les' ? (+f.valeur === 1 && !f.max ? UNI1[f.unite] : `tous les ${f.valeur}${f.max ? ' à ' + f.max : ''} ${f.unite}`) : 'aux jalons ' + (f.jalons || []).join(', ');
+const jalLabel = j => { if (j === 'T0') return 'à l\'instauration'; const m = /^([JSM])(\d+)(?:-(\d+))?$/.exec(j); if (!m) return j; const u = {J:['jour','jours'], S:['semaine','semaines'], M:['mois','mois']}[m[1]]; return 'après ' + (m[3] ? `${m[2]} à ${m[3]} ${u[1]}` : `${m[2]} ${+m[2] > 1 ? u[1] : u[0]}`); };
+const jalShort = jalLabel;
+const freq = f => f.mode === 'une_fois' ? 'une seule fois' : f.mode === 'tous_les' ? (+f.valeur === 1 && !f.max ? UNI1[f.unite] : `tous les ${f.valeur}${f.max ? ' à ' + f.max : ''} ${f.unite}`) : (f.jalons || []).map(jalShort).join(', ');
 const PH = {instauration:' (à l\'instauration)', entretien:' (après 1 an de traitement)'};
-const sentOrd = o => `ordonnance de ${CATS[o.categorie]}${PH[o.phase] || ''} : ${o.examens.join(', ')} — ${freq(o.frequence)}`;
+const sentOrd = o => `ordonnance ${DE(CATS[o.categorie])}${PH[o.phase] || ''} : ${o.examens.join(', ')} — ${freq(o.frequence)}`;
 const sentAct = a => a.action === 'ordonnance' ? 'générer une ' + sentOrd(a) : `afficher ${a.niveau === 'alerte' ? 'l\'alerte' : 'l\'information'} « ${a.libelle} »` + (a.ordonnance ? ' et pré-générer une ' + sentOrd(a.ordonnance) : '');
 
 /* ---- Essai en direct ---- */
@@ -1147,7 +1157,9 @@ function renderTry() {
   const bio = C.bio, late = bio.filter(w => w.st === 'late'), later = bio.filter(w => w.st !== 'late');
   if (late.length) h += `<h3>Biologie à prescrire maintenant (${late.length})</h3>` + table(late);
   if (later.length) h += '<h3>Biologie à venir</h3>' + table(later);
-  if (C.prev.length) h += '<h3>Prévention : examens non biologiques</h3>' + table(C.prev);
+  if (C.imagerie.length) h += '<h3>Imagerie</h3>' + table(C.imagerie);
+  if (C.traitement.length) h += '<h3>Traitements à prescrire</h3>' + table(C.traitement);
+  if (C.prev.length) h += '<h3>Vaccins, dépistages et prévention</h3>' + table(C.prev);
   $('out').innerHTML = h;
 }
 ['age', 'sexe', 'drug', 'hba1c', 'diab', 'dtcap'].forEach(id => $(id).addEventListener('input', renderTry));

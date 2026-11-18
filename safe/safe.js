@@ -94,8 +94,15 @@
     return null;
   }
 
+  // Un « traitement » à générer est déjà fait si le patient le prend : sa date de début joue le rôle du dernier résultat
+  function dernierTraitement(P, nom) {
+    const t = P.traitements.filter(x => norm(x.label).includes(norm(nom))).sort((a, b) => b.debut.localeCompare(a.debut))[0];
+    return t ? { date: t.debut, lib: t.label, val: t.label, unit: '' } : undefined;
+  }
+
   /* ---- Fréquences ---- */
-  const jalonJours = j => j === 'T0' ? 0 : j[0] === 'M' ? Math.round(+j.slice(1) * 30.4375) : +j.slice(1).split('-')[0] * 7; // Sn ou Sn-m : semaines, borne basse
+  // T0 = début ; Jn = n jours ; Sn ou Sn-m = semaines (borne basse) ; Mn = n mois
+  const jalonJours = j => j === 'T0' ? 0 : j[0] === 'J' ? +j.slice(1) : j[0] === 'M' ? Math.round(+j.slice(1) * 30.4375) : +j.slice(1).split('-')[0] * 7;
   const frequenceJours = f => Math.round(f.valeur * UNIT[f.unite]);
 
   /* ---- Correspondances « élément cherché » ↔ « élément à prescrire » ---- */
@@ -126,7 +133,7 @@
         const o = a.action === 'ordonnance' ? a : a.ordonnance; if (!o) return;
         if (o.phase === 'instauration' && !inst) return;
         if (o.phase === 'entretien' && inst) return;
-        const canal = o.categorie === 'biologie' ? 'biologie' : 'prevention', f = o.frequence;
+        const canal = { biologie: 'biologie', imagerie: 'imagerie', traitement: 'traitement' }[o.categorie] || 'prevention', f = o.frequence;
         o.examens.forEach(ex => {
           const w = ensure(ex, canal), ch = o.cherche && o.cherche[ex];
           if (f.mode === 'tous_les') { const k = `${r.id}|${ai}|${nk(ex)}`, livre = frequenceJours(f), ov = overrides[k];
@@ -139,7 +146,7 @@
     const rows = Object.values(map);
     for (const w of rows) {
       const labels = [...new Set([...w.srcs.map(s => s.ch).filter(Boolean), ...(presc2ch[w.key] || []), w.label])];
-      w.last = lastOf(P, labels, today);
+      w.last = w.canal === 'traitement' ? dernierTraitement(P, w.label) : lastOf(P, labels, today);
       const per = w.srcs.filter(s => s.days).map(s => s.days), pat = patientPer[w.key]; w.pat = pat;
       let pd = per.slice(); if (pat != null) pd = ctx.policy === 'patient' ? [pat] : [...pd, pat];
       const c = []; w.never = false; w.jal = []; w.planDone = false;
@@ -156,7 +163,7 @@
       w.st = !w.due ? 'na' : w.prescrit ? 'presc' : w.due <= today ? 'late' : w.due <= addDays(today, 30) ? 'soon' : 'ok';
     }
     rows.sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
-    return { ev, rows, bio: rows.filter(x => x.canal === 'biologie'), prev: rows.filter(x => x.canal === 'prevention'), indicateurs };
+    return { ev, rows, bio: rows.filter(x => x.canal === 'biologie'), imagerie: rows.filter(x => x.canal === 'imagerie'), traitement: rows.filter(x => x.canal === 'traitement'), prev: rows.filter(x => x.canal === 'prevention'), indicateurs };
   }
   return { planifier, evalArbre, evalCondition, decrireArbre, decrireCondition, cleDepuisLibelle, correspondances,
     traitementDeclencheur, age, norm, nk, addDays, addMonths, diffDays, frequenceJours, jalonJours, UNIT };

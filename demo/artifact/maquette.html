@@ -144,8 +144,15 @@ h3{margin:14px 0 6px}h3:first-child{margin-top:0}
     return null;
   }
 
+  // Un « traitement » à générer est déjà fait si le patient le prend : sa date de début joue le rôle du dernier résultat
+  function dernierTraitement(P, nom) {
+    const t = P.traitements.filter(x => norm(x.label).includes(norm(nom))).sort((a, b) => b.debut.localeCompare(a.debut))[0];
+    return t ? { date: t.debut, lib: t.label, val: t.label, unit: '' } : undefined;
+  }
+
   /* ---- Fréquences ---- */
-  const jalonJours = j => j === 'T0' ? 0 : j[0] === 'M' ? Math.round(+j.slice(1) * 30.4375) : +j.slice(1).split('-')[0] * 7; // Sn ou Sn-m : semaines, borne basse
+  // T0 = début ; Jn = n jours ; Sn ou Sn-m = semaines (borne basse) ; Mn = n mois
+  const jalonJours = j => j === 'T0' ? 0 : j[0] === 'J' ? +j.slice(1) : j[0] === 'M' ? Math.round(+j.slice(1) * 30.4375) : +j.slice(1).split('-')[0] * 7;
   const frequenceJours = f => Math.round(f.valeur * UNIT[f.unite]);
 
   /* ---- Correspondances « élément cherché » ↔ « élément à prescrire » ---- */
@@ -176,7 +183,7 @@ h3{margin:14px 0 6px}h3:first-child{margin-top:0}
         const o = a.action === 'ordonnance' ? a : a.ordonnance; if (!o) return;
         if (o.phase === 'instauration' && !inst) return;
         if (o.phase === 'entretien' && inst) return;
-        const canal = o.categorie === 'biologie' ? 'biologie' : 'prevention', f = o.frequence;
+        const canal = { biologie: 'biologie', imagerie: 'imagerie', traitement: 'traitement' }[o.categorie] || 'prevention', f = o.frequence;
         o.examens.forEach(ex => {
           const w = ensure(ex, canal), ch = o.cherche && o.cherche[ex];
           if (f.mode === 'tous_les') { const k = `${r.id}|${ai}|${nk(ex)}`, livre = frequenceJours(f), ov = overrides[k];
@@ -189,7 +196,7 @@ h3{margin:14px 0 6px}h3:first-child{margin-top:0}
     const rows = Object.values(map);
     for (const w of rows) {
       const labels = [...new Set([...w.srcs.map(s => s.ch).filter(Boolean), ...(presc2ch[w.key] || []), w.label])];
-      w.last = lastOf(P, labels, today);
+      w.last = w.canal === 'traitement' ? dernierTraitement(P, w.label) : lastOf(P, labels, today);
       const per = w.srcs.filter(s => s.days).map(s => s.days), pat = patientPer[w.key]; w.pat = pat;
       let pd = per.slice(); if (pat != null) pd = ctx.policy === 'patient' ? [pat] : [...pd, pat];
       const c = []; w.never = false; w.jal = []; w.planDone = false;
@@ -206,7 +213,7 @@ h3{margin:14px 0 6px}h3:first-child{margin-top:0}
       w.st = !w.due ? 'na' : w.prescrit ? 'presc' : w.due <= today ? 'late' : w.due <= addDays(today, 30) ? 'soon' : 'ok';
     }
     rows.sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
-    return { ev, rows, bio: rows.filter(x => x.canal === 'biologie'), prev: rows.filter(x => x.canal === 'prevention'), indicateurs };
+    return { ev, rows, bio: rows.filter(x => x.canal === 'biologie'), imagerie: rows.filter(x => x.canal === 'imagerie'), traitement: rows.filter(x => x.canal === 'traitement'), prev: rows.filter(x => x.canal === 'prevention'), indicateurs };
   }
   return { planifier, evalArbre, evalCondition, decrireArbre, decrireCondition, cleDepuisLibelle, correspondances,
     traitementDeclencheur, age, norm, nk, addDays, addMonths, diffDays, frequenceJours, jalonJours, UNIT };
@@ -777,15 +784,15 @@ window.REGLES = [
     "frequence": {
      "mode": "jalons",
      "jalons": [
-      "S1",
-      "S2"
+      "J7",
+      "J14"
      ]
     }
    }
   ],
   "points_a_valider": [
    "Source = RCP de TERALITHE LP 400 mg uniquement : vérifier les autres spécialités contenant du lithium.",
-   "Lithiémies à J7, J14 « et si nécessaire J21 » : J21 non représenté.",
+   "Lithiémies à J7, J14 « et si nécessaire J21 » : J21 non représenté (à ajouter comme jalon J21 si le médecin le souhaite).",
    "Après lithiémie efficace : « toutes les semaines pendant le premier mois », puis mensuelle pendant le premier trimestre, puis tous les deux mois. Le point de départ (date d'obtention de la lithiémie efficace) n'est pas représentable : non encodé.",
    "Pendant le traitement, le RCP demande des « contrôles réguliers » de la créatininémie et de la calcémie, une surveillance régulière de l'ECG et de la TSH, sans donner de fréquence : à définir par le médecin (rien n'est inventé ici).",
    "Le bilan « avant le traitement » est placé à T0 (date de début) : à affiner.",
@@ -954,7 +961,7 @@ function bannerPending(C){const n=pending(C).length;return C.indicateurs.map(i=>
 function vDossier(C){
  const trs=S.traitements.map(t=>{const hit=C.ev.find(x=>x.ev.ok&&x.ev.treat===t);return`<tr class="${hit?'rowhl':''}"><td>${fr(t.debut)}</td><td>${esc(t.label)}${hit?`<br><span class="src">Règle : ${esc(hit.r.libelle)}</span>`:''}</td></tr>`}).join('');
  const sv=[...S.suivi].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<tr><td>${fr(x.date)}</td><td class="${x.hi?'r':''}">${esc(x.lib)}</td><td class="num ${x.hi?'r':''}">${esc(x.val)}</td><td>${esc(x.unit)}</td><td>${x.prochain?fr(x.prochain):''}</td></tr>`).join('');
- const prev=C.prev.map(w=>`<tr><td>${esc(w.label)}</td><td>${w.due?fr(w.due):''}</td><td>${pill(w)}</td></tr>`).join('')||'<tr><td colspan=3 class="m">Aucun élément non biologique proposé</td></tr>';
+ const prev=[...C.imagerie,...C.traitement,...C.prev].map(w=>`<tr><td>${esc(w.label)}</td><td>${w.due?fr(w.due):''}</td><td>${pill(w)}</td></tr>`).join('')||'<tr><td colspan=3 class="m">Aucun élément non biologique proposé</td></tr>';
  return bannerPending(C)+`<div class="grid">
  <div class="pn"><h4 class="h-cy">Identité</h4><table><tr><td>Né(e) le</td><td>${fr(S.naissance)} (${age()} ans)</td></tr><tr><td>Patient</td><td>DOE John — fictif</td></tr></table></div>
  <div class="pn"><h4 class="h-sage">Épisodes et suivis en cours</h4><table>${S.episodes.map(e=>`<tr><td>${fr(e.d)}</td><td>${esc(e.l)}</td></tr>`).join('')}</table></div>
@@ -965,11 +972,11 @@ function vDossier(C){
 
 function vPlan(C){
  const rows=C.bio.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?`${fr(w.last.date)} — ${esc(w.last.val)} ${esc(w.last.unit)}`:'<span class="m">aucun résultat</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}${w.prescrit?`<br><span class="m">le ${fr(w.prescrit)}</span>`:''}</td></tr>`).join('');
- const rowsP=C.prev.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?fr(w.last.date):'<span class="m">—</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}</td></tr>`).join('');
+ const rowsP=[...C.imagerie,...C.traitement,...C.prev].map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?fr(w.last.date):'<span class="m">—</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}</td></tr>`).join('');
  const rl=C.ev.map(({r,ev})=>`<div style="margin:4px 0"><span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'Déclenchée':'Non déclenchée'}</span> <b>${esc(r.libelle)}</b><ul class="crit" style="margin:2px 0 0 18px;padding:0;list-style:none">${ev.inactive?'<li class="m">règle désactivée</li>':trHTML(ev)}</ul></div>`).join('');
  return bannerPending(C)+`<h3>Plan de soins — biologie</h3><div class="scroll"><table><tr><th>Élément à prescrire</th><th>Règles à l'origine</th><th>Périodicité retenue</th><th>Dernier résultat (éléments de suivi)</th><th>Échéance</th><th>Statut</th></tr>${rows||'<tr><td colspan=6 class="m">Aucune règle déclenchée</td></tr>'}</table></div>
  <div class="note"><b>Fusion :</b> quand plusieurs règles concernent le même élément, on retient la période la plus courte (document) ; la périodicité saisie pour le patient est prise en compte selon le réglage du simulateur. Le <b>dernier résultat</b> est lu dans les éléments de suivi — pas de source parallèle. Cadre orange = périodicité corrigée par l'utilisateur.</div>
- <h3>Plan de prévention — éléments non biologiques</h3><div class="scroll"><table><tr><th>Examen</th><th>Règles à l'origine</th><th>Périodicité</th><th>Dernier fait</th><th>Échéance</th><th>Statut</th></tr>${rowsP||'<tr><td colspan=6 class="m">—</td></tr>'}</table></div>
+ <h3>Imagerie, traitements et prévention — éléments non biologiques</h3><div class="scroll"><table><tr><th>Examen</th><th>Règles à l'origine</th><th>Périodicité</th><th>Dernier fait</th><th>Échéance</th><th>Statut</th></tr>${rowsP||'<tr><td colspan=6 class="m">—</td></tr>'}</table></div>
  <div class="note q"><b>À valider :</b> le classement « non biologique » (ECG, recherche de sang dans les selles) est une hypothèse de la maquette, d'après vos captures (ces examens figurent dans Prévention).</div>
  <h3>Évaluation des règles pour ce patient</h3>${rl}`}
 
