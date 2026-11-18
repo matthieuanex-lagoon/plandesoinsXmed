@@ -1,0 +1,109 @@
+{
+  "id": "depistage-colorectal",
+  "libelle": "Requête — dépistage (recherche de sang dans les selles)",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Document « Plan de soins » (Fred), transcrit dans regles/depistage-colorectal.yaml",
+  "evaluer_quand": [
+    "ouverture_dossier",
+    "integration_resultat",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "age",
+        "op": "entre",
+        "valeur": 50,
+        "valeur2": 75
+      },
+      {
+        "op": "ET",
+        "non": true,
+        "conditions": [
+          {
+            "op": "OU",
+            "conditions": [
+              {
+                "type": "pathologie",
+                "libelle": "polype du côlon"
+              },
+              {
+                "type": "pathologie",
+                "libelle": "cancer du côlon"
+              },
+              {
+                "type": "pathologie",
+                "libelle": "cancer du sigmoïde"
+              },
+              {
+                "type": "pathologie",
+                "libelle": "cancer du rectum"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op": "ET",
+        "non": true,
+        "conditions": [
+          {
+            "op": "OU",
+            "conditions": [
+              {
+                "type": "antecedent_familial",
+                "libelle": "polype",
+                "premier_degre": true
+              },
+              {
+                "type": "antecedent_familial",
+                "libelle": "cancer",
+                "premier_degre": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "compte_rendu",
+        "libelle": "Coloscopie",
+        "depuis_mois": 60,
+        "non": true
+      },
+      {
+        "type": "element_suivi",
+        "libelle": "Coloscopie",
+        "op": "existe",
+        "depuis_mois": 60,
+        "non": true
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "ordonnance",
+      "categorie": "autre",
+      "examens": [
+        "Recherche de sang dans les selles"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 2,
+        "unite": "ans"
+      }
+    }
+  ],
+  "points_a_valider": [
+    "Écart avec le programme officiel : sante.fr (18/03/2026) indique « 50 à 74 ans » ; le document indique 50 à 75 ans.",
+    "Le programme officiel exclut les antécédents personnels ou familiaux de « polype, de cancer ou de maladie touchant le côlon ou le rectum » (sans limiter au 1er degré) ; le document limite aux parents du 1er degré et ajoute « CR de coloscopie de moins de 5 ans »."
+  ],
+  "references": [
+    {
+      "libelle": "sante.fr — « Cancer colorectal : pourquoi se faire dépister ? » (18/03/2026)",
+      "url": "https://www.sante.fr/node/6706903",
+      "extrait": "personnes âgées de 50 à 74 ans … un test tous les 2 ans … test immunologique à réaliser chez soi"
+    }
+  ]
+}

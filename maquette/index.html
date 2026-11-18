@@ -48,6 +48,7 @@ h3{margin:14px 0 6px}h3:first-child{margin-top:0}
 <div class="sim" id="sim"></div>
 <div class="tabs" id="tabs"></div>
 <main id="main"></main>
+<script src="../moteur/moteur.js"></script>
 <script src="regles-data.js"></script>
 <script>
 /* ===== Utilitaires ===== */
@@ -68,9 +69,9 @@ const ruleById=id=>RULES.find(r=>r.id===id);
 const RULES=window.REGLES;
 
 /* ===== État (patient fictif d'après les captures) ===== */
-const DRUGS=[{label:'Lamotrigine',atc:'N03AX09'},{label:'Médicament ATC C09 (exemple de maquette)',atc:'C09'},{label:'Médicament ATC C09C (exemple de maquette)',atc:'C09C'}];
+const DRUGS=[{label:'Lamotrigine',atc:'N03AX09'},{label:'Médicament ATC C09 (exemple de maquette)',atc:'C09'},{label:'Médicament ATC C09C (exemple de maquette)',atc:'C09C'},{label:'Lithium (TERALITHE, ATC N05AN01)',atc:'N05AN01'}];
 function initial(){return{
- today:'2026-11-18',naissance:'1980-11-12',policy:'min',tab:'dossier',toast:null,
+ today:'2026-11-18',naissance:'1980-11-12',sexe:'',policy:'min',tab:'dossier',toast:null,
  episodes:[{d:'2025-08-24',l:'Tabagisme'},{d:'2025-09-04',l:'Diabète de type 2'},{d:'2026-11-12',l:'Coronaropathie'}],
  atcdFam:[{l:'Emphysème du poumon',lien:'Grand-oncle m.'},{l:'Lymphome cérébral',lien:'Grand-père'}],
  coloscopieCR:null,
@@ -83,44 +84,12 @@ function initial(){return{
  patientPer:{},ovr:{},prescrit:{},log:[],hprimDone:false};}
 let S=initial();
 
-/* ===== Moteur ===== */
-const PRESC2CH={}, CH2PRESC=[];
-RULES.forEach(r=>(r.entretien||[]).forEach(it=>{if(it.prescrire&&it.chercher){(PRESC2CH[nk(it.prescrire)]??=[]).push(it.chercher);CH2PRESC.push([it.chercher,it.prescrire])}}));
-const keyForLabel=l=>{const n=norm(l);const f=CH2PRESC.find(([c])=>{const m=norm(c);return n===m||n.startsWith(m)||m.startsWith(n)});return f?nk(f[1]):nk(l)};
-const age=()=>{const t=new Date(S.today),b=new Date(S.naissance);let a=t.getUTCFullYear()-b.getUTCFullYear();if(t.getUTCMonth()<b.getUTCMonth()||(t.getUTCMonth()===b.getUTCMonth()&&t.getUTCDate()<b.getUTCDate()))a--;return a};
-const lastOf=labels=>{const ns=labels.map(norm);return S.suivi.filter(x=>ns.some(n=>{const m=norm(x.lib);return m===n||m.startsWith(n)||n.startsWith(m)})).sort((a,b)=>b.date.localeCompare(a.date))[0]};
-function evalRule(r){const t=r.declencheur;
- if(t.type==='medicament'){const tr=S.traitements.find(x=>x.atc&&t.atc.some(a=>x.atc.startsWith(a)));
-  return tr?{ok:true,treat:tr,crit:[{t:`Traitement en cours : ${tr.label} (ATC ${tr.atc})`,ok:true}]}:{ok:false,crit:[{t:`Aucun traitement de classe ATC ${t.atc.join(' / ')}`,ok:false}]}}
- if(t.type==='pathologie'){const h=lastOf(['HbA1c']);const ok=!!h&&+h.val>7;
-  return{ok,crit:[{t:h?`Dernière HbA1c : ${h.val} ${h.unit} (${fr(h.date)}) — seuil > 7 %`:'Aucune HbA1c enregistrée',ok}]}}
- if(r.id==='depistage-colorectal'){const a=age(),has=re=>S.episodes.some(e=>re.test(e.l)),cr=S.coloscopieCR&&diffDays(S.coloscopieCR,S.today)<5*365.25;
-  const c=[[`Âge entre 50 et 75 ans (patient : ${a} ans)`,a>=50&&a<=75],['Pas d\'épisode de soin polype / cancer côlon-sigmoïde-rectum',!has(/polype|colon|côlon|sigmo|rect/i)],
-   ['Pas d\'ATCD familial 1ᵉʳ degré de polype ou cancer',!S.atcdFam.some(x=>/polype|colon|côlon|rect/i.test(x.l)&&/père|mère|frère|sœur|soeur|enfant/i.test(x.lien))],
-   ['Pas de CR de coloscopie de moins de 5 ans',!cr],['Pas d\'élément de suivi coloscopie de moins de 5 ans',!lastOf(['Coloscopie'])]].map(([t,ok])=>({t,ok}));
-  return{ok:c.every(x=>x.ok),crit:c}}
- return{ok:false,crit:[]}}
-function compute(){
- const ev=RULES.map(r=>({r,ev:evalRule(r)})),map={};
- const ensure=(lab,canal)=>map[nk(lab)]??={key:nk(lab),label:lab,canal,srcs:[]};
- for(const{r,ev:e}of ev){if(!e.ok)continue;
-  const inst=r.declencheur.type==='medicament'&&S.today<addDays(e.treat.debut,365.25);
-  if(inst)(r.instauration||[]).forEach(it=>ensure(it.prescrire,'biologie').srcs.push({r,phase:'instauration',jal:it.jalons,start:e.treat.debut}));
-  else(r.entretien||[]).forEach((it,i)=>{if(!it.prescrire)return;const k=r.id+'|'+i,ov=S.ovr[k],d=ov??perDays(it.periodicite);
-   ensure(it.prescrire,it.canal||'biologie').srcs.push({r,phase:'entretien',days:d,livre:perDays(it.periodicite),mod:ov!=null,ch:it.chercher})})}
- const rows=Object.values(map);
- for(const w of rows){const labels=[...new Set([...w.srcs.map(s=>s.ch).filter(Boolean),...(PRESC2CH[w.key]||[]),w.label])];
-  w.last=lastOf(labels);const per=w.srcs.filter(s=>s.days).map(s=>s.days),pat=S.patientPer[w.key];w.pat=pat;
-  let pd=per.slice();if(pat!=null)pd=S.policy==='patient'?[pat]:[...pd,pat];
-  const c=[];w.never=false;
-  if(pd.length){w.days=Math.min(...pd);if(w.last)c.push(addDays(w.last.date,w.days));else{c.push(S.today);w.never=true}}
-  w.jal=[];for(const s of w.srcs.filter(s=>s.jal)){const ds=s.jal.map(j=>addDays(s.start,jalDays(j)));w.jal.push(...s.jal.map((j,i)=>j+' ('+fr(ds[i])+')'));
-   const nx=ds.find(d=>!w.last||w.last.date<addDays(d,-30));if(nx)c.push(nx);else w.planDone=true;if(nx&&!w.last)w.never=true}
-  w.due=c.length?c.sort()[0]:null;
-  const pr=S.prescrit[w.key];w.prescrit=pr&&(!w.last||w.last.date<pr)?pr:null;
-  w.st=!w.due?'na':w.prescrit?'presc':w.due<=S.today?'late':w.due<=addDays(S.today,30)?'soon':'ok'}
- rows.sort((a,b)=>(a.due||'9').localeCompare(b.due||'9'));
- return{ev,rows,bio:rows.filter(x=>x.canal==='biologie'),prev:rows.filter(x=>x.canal==='prevention')}}
+/* ===== Moteur : partagé (moteur/moteur.js), règles au format v1 ===== */
+const keyForLabel=l=>Moteur.cleDepuisLibelle(l,RULES);
+const age=()=>Moteur.age(S,S.today);
+const patientModel=()=>({...S,vaccins:[],documents:S.coloscopieCR?[{libelle:'Coloscopie',date:S.coloscopieCR}]:[]});
+const compute=()=>Moteur.planifier(RULES,patientModel(),{today:S.today,overrides:S.ovr,patientPer:S.patientPer,policy:S.policy,prescrit:S.prescrit});
+const trHTML=r=>`<li class="${r.ok?'yes':'no'}">${r.ok?'✔':'✘'} ${esc(r.t)}${r.k?`<ul style="list-style:none;margin:0 0 0 14px;padding:0">${r.k.map(trHTML).join('')}</ul>`:''}</li>`;
 const pending=C=>C.bio.filter(x=>x.st==='late');
 const STL={late:'En retard',soon:'Bientôt',ok:'À jour',presc:'Prescrit',na:'Plan 1ʳᵉ année réalisé'};
 const pill=w=>`<span class="pill ${w.st}">${w.st==='late'&&w.never?'Jamais fait':STL[w.st]}</span>`;
@@ -140,6 +109,7 @@ const TABS=[['dossier','Dossier patient'],['plan','Plan de soins'],['presc','Pre
 function render(){const C=compute(),np=pending(C).length;
  document.getElementById('sim').innerHTML=`<b>Simulateur</b>
  <label>Date du jour <input type="date" value="${S.today}" onchange="S.today=this.value;S.toast=null;render()"></label>
+ <label>Sexe <select onchange="S.sexe=this.value;render()"><option value="">non précisé</option><option value="F" ${S.sexe==='F'?'selected':''}>F</option><option value="M" ${S.sexe==='M'?'selected':''}>M</option></select></label>
  <label>Naissance <input type="date" value="${S.naissance}" onchange="S.naissance=this.value;render()"> (${age()} ans)</label>
  <label>Périodicité saisie pour le patient <select onchange="S.policy=this.value;render()"><option value="min" ${S.policy==='min'?'selected':''}>retenir la plus courte (v0)</option><option value="patient" ${S.policy==='patient'?'selected':''}>prime sur la règle</option></select></label>
  <label>Instaurer <select id="drug">${DRUGS.map((d,i)=>`<option value="${i}">${esc(d.label)}</option>`).join('')}</select><button onclick="instaurer(+document.getElementById('drug').value)">Instaurer</button></label>
@@ -149,7 +119,7 @@ function render(){const C=compute(),np=pending(C).length;
  const toast=S.toast?`<div class="toast">${esc(S.toast)} <a href="#" onclick="S.toast=null;render();return false">✕</a></div>`:'';
  document.getElementById('main').innerHTML=toast+v}
 
-function bannerPending(C){const n=pending(C).length;return n?`<div class="alert"><span><b>${n} prescription(s) biologique(s) en attente</b> — éléments de suivi dont le délai est dépassé.</span><button class="pri" onclick="S.tab='presc';render()">Ouvrir la prescription</button></div>`:''}
+function bannerPending(C){const n=pending(C).length;return C.indicateurs.map(i=>`<div class="alert"><span>${i.niveau==='alerte'?'🔔':'ℹ'} <b>${esc(i.libelle)}</b> <span class="m">— ${esc(i.r.libelle)}</span></span></div>`).join('')+(n?`<div class="alert"><span><b>${n} prescription(s) biologique(s) en attente</b> — éléments de suivi dont le délai est dépassé.</span><button class="pri" onclick="S.tab='presc';render()">Ouvrir la prescription</button></div>`:'')}
 function vDossier(C){
  const trs=S.traitements.map(t=>{const hit=C.ev.find(x=>x.ev.ok&&x.ev.treat===t);return`<tr class="${hit?'rowhl':''}"><td>${fr(t.debut)}</td><td>${esc(t.label)}${hit?`<br><span class="src">Règle : ${esc(hit.r.libelle)}</span>`:''}</td></tr>`}).join('');
  const sv=[...S.suivi].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<tr><td>${fr(x.date)}</td><td class="${x.hi?'r':''}">${esc(x.lib)}</td><td class="num ${x.hi?'r':''}">${esc(x.val)}</td><td>${esc(x.unit)}</td><td>${x.prochain?fr(x.prochain):''}</td></tr>`).join('');
@@ -165,7 +135,7 @@ function vDossier(C){
 function vPlan(C){
  const rows=C.bio.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?`${fr(w.last.date)} — ${esc(w.last.val)} ${esc(w.last.unit)}`:'<span class="m">aucun résultat</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}${w.prescrit?`<br><span class="m">le ${fr(w.prescrit)}</span>`:''}</td></tr>`).join('');
  const rowsP=C.prev.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?fr(w.last.date):'<span class="m">—</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}</td></tr>`).join('');
- const rl=C.ev.map(({r,ev})=>`<div style="margin:4px 0"><span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'Déclenchée':'Non déclenchée'}</span> <b>${esc(r.libelle)}</b><ul class="crit" style="margin:2px 0 0 18px;padding:0">${ev.crit.map(c=>`<li class="${c.ok?'yes':'no'}">${c.ok?'✔':'✘'} ${esc(c.t)}</li>`).join('')}</ul></div>`).join('');
+ const rl=C.ev.map(({r,ev})=>`<div style="margin:4px 0"><span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'Déclenchée':'Non déclenchée'}</span> <b>${esc(r.libelle)}</b><ul class="crit" style="margin:2px 0 0 18px;padding:0;list-style:none">${ev.inactive?'<li class="m">règle désactivée</li>':trHTML(ev)}</ul></div>`).join('');
  return bannerPending(C)+`<h3>Plan de soins — biologie</h3><div class="scroll"><table><tr><th>Élément à prescrire</th><th>Règles à l'origine</th><th>Périodicité retenue</th><th>Dernier résultat (éléments de suivi)</th><th>Échéance</th><th>Statut</th></tr>${rows||'<tr><td colspan=6 class="m">Aucune règle déclenchée</td></tr>'}</table></div>
  <div class="note"><b>Fusion :</b> quand plusieurs règles concernent le même élément, on retient la période la plus courte (document) ; la périodicité saisie pour le patient est prise en compte selon le réglage du simulateur. Le <b>dernier résultat</b> est lu dans les éléments de suivi — pas de source parallèle. Cadre orange = périodicité corrigée par l'utilisateur.</div>
  <h3>Plan de prévention — éléments non biologiques</h3><div class="scroll"><table><tr><th>Examen</th><th>Règles à l'origine</th><th>Périodicité</th><th>Dernier fait</th><th>Échéance</th><th>Statut</th></tr>${rowsP||'<tr><td colspan=6 class="m">—</td></tr>'}</table></div>
@@ -198,15 +168,18 @@ function incorporer(){const C=compute();
  S.hprimDone=true;S.toast='Résultats incorporés dans les éléments de suivi'+(Object.keys(S.patientPer).length?' ; périodicité(s) propre(s) au patient enregistrée(s).':'.');S.tab='plan';render()}
 
 function vRegles(C){
- return`<p class="m">Les règles sont <b>livrées</b> (colonne de gauche, jamais modifiée) ; l'utilisateur saisit une périodicité <b>corrigée</b> (ex. « 6 mois », « 2 ans »). Le bouton « Restaurer » revient à la règle d'origine (droit au remords).</p>`+C.ev.map(({r,ev})=>{
-  const it=(r.entretien||[]).map((e,i)=>{const k=r.id+'|'+i,ov=S.ovr[k];
-   return`<tr><td>${esc(e.chercher||'—')}</td><td>${e.prescrire?esc(e.prescrire):'<span class="r">à compléter (gabarit vide dans le document)</span>'}${e.canal==='prevention'?' <span class="src">prévention</span>':''}</td><td>${fmtPer(perDays(e.periodicite))}${e.periodicite.max?` <span class="m">(document : ${e.periodicite.min} à ${e.periodicite.max} ${e.periodicite.unite}s ; borne basse retenue)</span>`:''}</td>
-   <td><input size="9" placeholder="—" value="${ov!=null?fmtPer(ov):''}" ${e.prescrire?'':'disabled'} onchange="const d=parsePer(this.value);if(d)S.ovr['${k}']=d;else delete S.ovr['${k}'];render()"> ${ov!=null?`<button onclick="delete S.ovr['${k}'];render()">Restaurer</button>`:''}</td></tr>`}).join('');
-  const ins=(r.instauration||[]).map(e=>`<tr><td>${esc(e.prescrire)}</td><td>${esc(e.periodicite_texte||e.jalons.join(', '))}</td></tr>`).join('');
-  return`<div class="rule"><header><b>${esc(r.libelle)}</b><span>Déclencheur : ${r.declencheur.type}${r.declencheur.atc?' · ATC '+r.declencheur.atc.join(', '):''} · <span class="pill ${r.statut_validation==='valide'?'ok':'soon'}">${r.statut_validation==='valide'?'validée':'à valider'}</span> <span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'active pour ce patient':'inactive'}</span></span></header>
-  <div style="padding:6px 10px">${r.declencheur.criteres?`<div class="m">Critères : ${r.declencheur.criteres.map(esc).join(' · ')}</div>`:''}
-  ${ins?`<h4 style="margin:8px 0 2px">À l'instauration / changement de posologie</h4><table><tr><th>À prescrire</th><th>Plan 1ʳᵉ année</th></tr>${ins}</table>`:''}
-  <h4 style="margin:8px 0 2px">${ins?'Après 1 an':'Suivi'}</h4><table><tr><th>Élément à chercher</th><th>À prescrire</th><th>Périodicité livrée</th><th>Périodicité corrigée</th></tr>${it}</table></div></div>`}).join('')}
+ const frTxt=f=>f.mode==='une_fois'?'une seule fois':f.mode==='jalons'?'jalons '+f.jalons.join(', '):`${f.valeur}${f.max?' à '+f.max:''} ${f.unite}`;
+ return`<p class="m">Les règles sont <b>livrées</b> (périodicité de gauche, jamais modifiée) ; l'utilisateur saisit une périodicité <b>corrigée</b> (ex. « 6 mois », « 2 ans »). « Restaurer » revient à la règle d'origine (droit au remords). Les règles s'écrivent dans le <b>générateur</b>.</p>`+C.ev.map(({r,ev})=>{
+  const lignes=(r.alors||[]).map((a,ai)=>{const o=a.action==='ordonnance'?a:a.ordonnance;
+   if(!o)return`<tr><td colspan=5>${a.niveau==='alerte'?'🔔':'ℹ'} Indicateur : <b>${esc(a.libelle)}</b></td></tr>`;
+   return o.examens.map(ex=>{const k=`${r.id}|${ai}|${Moteur.nk(ex)}`,ov=S.ovr[k],ch=o.cherche&&o.cherche[ex],f=o.frequence;
+    return`<tr><td>${o.phase==='instauration'?'Instauration':o.phase==='entretien'?'Après 1 an':'—'}</td><td>${esc(ch||'—')}</td><td><b>${esc(ex)}</b>${o.categorie!=='biologie'?` <span class="src">${esc(o.categorie)} · prévention</span>`:''}</td><td>${frTxt(f)}${f.max?' <span class="m">(borne basse retenue)</span>':''}</td>
+    <td>${f.mode==='tous_les'?`<input size="9" placeholder="—" value="${ov!=null?fmtPer(ov):''}" onchange="const d=parsePer(this.value);if(d)S.ovr['${k}']=d;else delete S.ovr['${k}'];render()"> ${ov!=null?`<button onclick="delete S.ovr['${k}'];render()">Restaurer</button>`:''}`:'<span class="m">—</span>'}</td></tr>`}).join('')}).join('');
+  return`<div class="rule"><header><b>${esc(r.libelle)}</b><span><span class="pill ${r.statut_validation==='valide'?'ok':'soon'}">${r.statut_validation==='valide'?'validée':'à valider'}</span> <span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'active pour ce patient':'inactive'}</span></span></header>
+  <div style="padding:6px 10px"><div class="m">SI ${esc(Moteur.decrireArbre(r.quand))}</div>
+  ${(r.references||[]).length?`<div class="m">Sources : ${r.references.map(x=>x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.libelle)}</a>`:esc(x.libelle)).join(' · ')}</div>`:''}
+  ${(r.points_a_valider||[]).map(x=>`<div class="note q"><b>À compléter :</b> ${esc(x)}</div>`).join('')}
+  <table><tr><th>Phase</th><th>Élément à chercher</th><th>À prescrire</th><th>Périodicité livrée</th><th>Périodicité corrigée</th></tr>${lignes}</table></div></div>`}).join('')}
 render();
 </script>
 </body>

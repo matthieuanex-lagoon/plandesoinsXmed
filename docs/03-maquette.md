@@ -3,8 +3,8 @@
 `maquette/maquette-autonome.html` (un seul fichier, à ouvrir dans un navigateur) ou `maquette/index.html`.
 Patient **fictif** reprenant les données visibles sur vos captures (DOE John). Rien n'est branché sur XMed.
 
-Les règles viennent de `regles/*.yaml` ; après modification : `python3 tools/build_maquette_data.py`
-(valide contre le schéma, régénère `maquette/regles-data.js` et la version autonome).
+Les règles viennent de `regles/v1/` (voir `05-convergence-et-cas.md`) ; la maquette utilise le **moteur partagé** `moteur/moteur.js`. Après modification d'une règle : `python3 tools/build.py`
+(valide contre le schéma, régénère les données et les fichiers autonomes).
 
 ## Ce que la maquette fait réellement
 

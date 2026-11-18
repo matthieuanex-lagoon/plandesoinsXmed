@@ -1,0 +1,84 @@
+{
+  "id": "diabete-hba1c-sup-7",
+  "libelle": "Règle diabète HbA1c > 7 %",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Document « Plan de soins » (Fred), transcrit dans regles/diabete-hba1c-sup-7.yaml",
+  "evaluer_quand": [
+    "ouverture_dossier",
+    "integration_resultat",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "element_suivi",
+        "libelle": "HbA1c",
+        "op": ">",
+        "valeur": 7
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "ordonnance",
+      "categorie": "biologie",
+      "examens": [
+        "NFS",
+        "EAL",
+        "SGOT",
+        "SGPT",
+        "Gamma GT",
+        "TP",
+        "Clairance de la créatinine",
+        "RAC"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 1,
+        "unite": "ans"
+      },
+      "cherche": {
+        "NFS": "Hémoglobine",
+        "EAL": "Chol total",
+        "SGOT": "SGOT",
+        "SGPT": "SGPT",
+        "Gamma GT": "Gamma GT",
+        "TP": "TP",
+        "Clairance de la créatinine": "Clairance de la créatinine CKD-EPI",
+        "RAC": "RAC"
+      }
+    },
+    {
+      "action": "ordonnance",
+      "categorie": "biologie",
+      "examens": [
+        "HbA1c"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 3,
+        "unite": "mois"
+      },
+      "cherche": {
+        "HbA1c": "HbA1c"
+      }
+    },
+    {
+      "action": "ordonnance",
+      "categorie": "autre",
+      "examens": [
+        "ECG"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 1,
+        "unite": "ans"
+      },
+      "cherche": {
+        "ECG": "ECG dans ES et doc"
+      }
+    }
+  ]
+}

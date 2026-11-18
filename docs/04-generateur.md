@@ -31,9 +31,11 @@ Le banc d'essai contient une version de démonstration de ce moteur.
 | Diabète — suivi biologique | épisode « Diabète » | HbA1c tous les 3 mois ; NFS, ionogramme, créatinine, protéinurie, créatininurie, HbA1c, EAL tous les ans |
 | Zyprexa — numération | traitement « Zyprexa » | numération tous les 2 mois |
 
-Fichiers : `regles/v1/*.json`, **exportés depuis le générateur** (`node tools/export_exemples_v1.js`), validés par `python3 tools/valider_v1.py`.
+Fichiers : `regles/v1/exemples-generateur/*.json`, validés par `python3 tools/build.py`. Le générateur charge toute la bibliothèque `regles/v1/` (règles de Fred, cas sourcés, exemples) ; un fichier autonome est `generateur/generateur-autonome.html`.
 
-## Relation avec les règles du document (`regles/*.yaml`)
+## Relation avec les règles du document (`regles/*.yaml`) — **mise à jour : convergence faite**, voir `05-convergence-et-cas.md`
+
+_Texte d'origine :_
 
 Le document décrit des règles « médicament / profil / pathologie » avec phase d'instauration, période la plus courte, périodicité corrigée (droit au remords).
 Le générateur est le **même principe en plus général** (conditions combinables, plusieurs types de sortie). Il ne reprend pas encore :

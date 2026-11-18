@@ -16,12 +16,15 @@ prescription biologique.
 | `docs/02-modele-donnees.md` | Modèle de données et algorithme de fusion des règles |
 | `docs/03-maquette.md` | Maquette interactive : mode d'emploi, scénarios, hypothèses |
 | `maquette/maquette-autonome.html` | **La maquette** (un seul fichier, ouvrir dans un navigateur) |
+| `docs/05-convergence-et-cas.md` | Format et moteur uniques, écart avec les sources officielles, cas sourcés |
+| `moteur/moteur.js` | **Moteur unique** (conditions, phases, fusion, échéances) |
+| `tests/moteur.test.js` | Tests du moteur (`node tests/moteur.test.js`) |
 | `generateur/index.html` | **Générateur de règles** (conditions ET/OU/NON → ordonnances, indicateurs de prévention) |
 | `docs/04-generateur.md` | Générateur : mode d'emploi, modèle, questions ouvertes |
 | `docs/xmed/` | Captures d'écran XMed de référence (dépôt privé) |
-| `tools/build_maquette_data.py` | Valide les règles YAML et régénère les données de la maquette |
+| `tools/build.py`, `tools/migrer_v0_v1.py` | Valide les règles, régénère données et fichiers autonomes ; migre les YAML de Fred vers le format v1 |
 | `regles/schema.json` | Format d'une règle (JSON Schema) |
-| `regles/schema-v1.json`, `regles/v1/` | Format de règle produit par le générateur + 3 exemples |
+| `regles/schema-v1.json`, `regles/v1/` | Format de règle unique ; `document-fred/`, `cas-supplementaires/` (sourcés), `exemples-generateur/` |
 | `regles/*.yaml` | Les 4 exemples du document, transcrits tels quels |
 
 ## Principe de prudence

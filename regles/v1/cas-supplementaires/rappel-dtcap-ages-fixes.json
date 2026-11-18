@@ -1,0 +1,80 @@
+{
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Recommandation officielle lue sur la source citée — non validée cliniquement",
+  "id": "rappel-dtcap-ages-fixes",
+  "libelle": "Rappel dTcaP aux âges fixes (25, 45, 65 ans, puis tous les 10 ans)",
+  "evaluer_quand": [
+    "ouverture_dossier",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "op": "OU",
+        "conditions": [
+          {
+            "type": "age",
+            "op": "=",
+            "valeur": 25
+          },
+          {
+            "type": "age",
+            "op": "=",
+            "valeur": 45
+          },
+          {
+            "type": "age",
+            "op": "=",
+            "valeur": 65
+          },
+          {
+            "type": "age",
+            "op": "=",
+            "valeur": 75
+          },
+          {
+            "type": "age",
+            "op": "=",
+            "valeur": 85
+          }
+        ]
+      },
+      {
+        "type": "vaccin",
+        "libelle": "dTcaP",
+        "statut": "non_fait"
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "indicateur_prevention",
+      "libelle": "Rappel dTcaP à prévoir (âge fixe)",
+      "niveau": "alerte",
+      "ordonnance": {
+        "categorie": "vaccin",
+        "examens": [
+          "Vaccin dTcaP"
+        ],
+        "frequence": {
+          "mode": "une_fois"
+        }
+      }
+    }
+  ],
+  "points_a_valider": [
+    "Âge exact : un patient ayant dépassé l'âge fixe sans rappel n'est plus signalé. La source parle d'âges fixes, pas de rattrapage : à définir.",
+    "« Vaccin non fait » n'a pas de fenêtre de temps dans cette règle (un ancien vaccin compte comme fait) : à définir.",
+    "Libellé du vaccin à faire correspondre à celui du module vaccination de XMed (la capture affiche « Vaccin DTCP »).",
+    "Le calendrier vaccinal 2026 (PDF, avril 2026) n'a pas pu être lu depuis cet environnement ; une recherche signale une mention de suspension du dTcaP chez les 65 ans et plus, non vérifiée : à confirmer avant d'activer les âges ≥ 65."
+  ],
+  "references": [
+    {
+      "libelle": "Vaccination Info Service — « Adultes (27 à 64 ans) » (mis à jour le 20/04/2026)",
+      "url": "https://www.vaccination-info-service.fr/La-vaccination-au-cours-de-la-vie/Adultes-27-a-64-ans",
+      "extrait": "les rappels se font tous les 20 ans aux âges fixes de 25 ans, 45 ans, 65 ans … à partir de 65 ans les rappels se font tous les 10 ans (75 ans, 85 ans...)"
+    }
+  ]
+}

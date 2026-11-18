@@ -39,12 +39,14 @@ label.b{display:block;font-size:12px;color:var(--mut)}
 <div class="layout"><aside><div class="box lib"><h3 class="h-n">Mes règles</h3><div id="lib"></div><div class="in">
 <button class="pri" onclick="addRule()">+ Nouvelle règle</button> <button onclick="dupRule()">Dupliquer</button><br><br>
 <button onclick="exportAll()">Exporter (JSON)</button> <button onclick="document.getElementById('imp').click()">Importer</button>
-<input type="file" id="imp" accept=".json" hidden onchange="importAll(this)"><br><br><button class="x" onclick="resetAll()">Remettre les exemples</button></div></div></aside>
+<input type="file" id="imp" accept=".json" hidden onchange="importAll(this)"><br><br><button class="x" onclick="resetAll()">Remettre la bibliothèque</button></div></div></aside>
 <section id="work"></section></div>
 <datalist id="dl-path"><option value="Diabète"><option value="Diabète de type 2"><option value="Coronaropathie"><option value="Tabagisme"></datalist>
 <datalist id="dl-med"><option value="Zyprexa"><option value="Lamotrigine"><option value="Simvastatine"></datalist>
 <datalist id="dl-suivi"><option value="HbA1c"><option value="Hémoglobine"><option value="Cholestérol LDL"><option value="Cholestérol total"><option value="Glycémie"><option value="Créatinine"></datalist>
 <datalist id="dl-vac"><option value="Tétanos"><option value="DTCP"><option value="Pneumocoque"></datalist>
+<script src="../moteur/moteur.js"></script>
+<script src="bibliotheque-data.js"></script>
 <script>
 /* ===== Outils ===== */
 const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
@@ -54,40 +56,32 @@ const addDays=(s,n)=>new Date(new Date(s+'T00:00:00Z').getTime()+Math.round(n)*8
 const addMonths=(s,m)=>{const d=new Date(s+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+m);return d.toISOString().slice(0,10)};
 const fr=s=>s?s.split('-').reverse().join('/'):'';
 const slug=s=>norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'regle';
-const TYPES={age:'Âge',sexe:'Sexe',pathologie:'Pathologie / épisode de soin',medicament:'Médicament',element_suivi:'Élément de suivi / résultat de biologie',vaccin:'Vaccin'};
+const TYPES={age:'Âge',sexe:'Sexe',pathologie:'Pathologie / épisode de soin',medicament:'Médicament',element_suivi:'Élément de suivi / résultat de biologie',vaccin:'Vaccin',antecedent_familial:'Antécédent familial',compte_rendu:'Compte rendu / document'};
 const DECL={ouverture_dossier:'À l\'ouverture du dossier',nouvelle_prescription:'À la prescription d\'un médicament',integration_resultat:'À l\'intégration d\'un résultat (HPRIM)',quotidien:'Traitement quotidien'};
-const CATS={biologie:'Biologie',imagerie:'Imagerie',vaccin:'Vaccin',autre:'Autre'};
+const CATS={biologie:'Biologie',imagerie:'Imagerie',vaccin:'Vaccin',consultation:'Consultation',autre:'Autre (prévention)'};
+const PHASES={'':'toute la durée',instauration:'à l\'instauration (1ʳᵉ année)',entretien:'après 1 an de traitement'};
 const newLeaf=t=>({age:{type:'age',op:'=',valeur:45},sexe:{type:'sexe',valeur:'F'},pathologie:{type:'pathologie',libelle:''},medicament:{type:'medicament',libelle:'',atc:''},
- element_suivi:{type:'element_suivi',libelle:'',op:'existe'},vaccin:{type:'vaccin',libelle:'',statut:'non_fait'}}[t]);
+ element_suivi:{type:'element_suivi',libelle:'',op:'existe'},vaccin:{type:'vaccin',libelle:'',statut:'non_fait'},antecedent_familial:{type:'antecedent_familial',libelle:'',premier_degre:true},compte_rendu:{type:'compte_rendu',libelle:'',depuis_mois:60}}[t]);
 const newOrd=()=>({categorie:'biologie',examens:[],frequence:{mode:'une_fois'}});
 
-/* ===== Exemples (ceux de la demande) ===== */
-function examples(){return[
- {id:'vaccin-tetanos-45-ans',libelle:'Vaccin tétanos à 45 ans',actif:true,statut_validation:'a_valider',evaluer_quand:['ouverture_dossier','quotidien'],
-  quand:{op:'ET',conditions:[{type:'age',op:'=',valeur:45},{type:'vaccin',libelle:'Tétanos',statut:'non_fait'}]},
-  alors:[{action:'indicateur_prevention',libelle:'Vaccination tétanos à prévoir',niveau:'alerte',ordonnance:{categorie:'vaccin',examens:['Vaccin tétanos'],frequence:{mode:'une_fois'}}}]},
- {id:'diabete-suivi',libelle:'Diabète — suivi biologique',actif:true,statut_validation:'a_valider',evaluer_quand:['ouverture_dossier','integration_resultat','quotidien'],
-  quand:{op:'ET',conditions:[{type:'pathologie',libelle:'Diabète'}]},
-  alors:[{action:'ordonnance',categorie:'biologie',examens:['HbA1c'],frequence:{mode:'tous_les',valeur:3,unite:'mois'}},
-   {action:'ordonnance',categorie:'biologie',examens:['NFS','Ionogramme','Créatinine','Protéinurie','Créatininurie','HbA1c','EAL'],frequence:{mode:'tous_les',valeur:1,unite:'ans'}}]},
- {id:'zyprexa-numeration',libelle:'Zyprexa — numération',actif:true,statut_validation:'a_valider',evaluer_quand:['nouvelle_prescription','quotidien'],
-  quand:{op:'ET',conditions:[{type:'medicament',libelle:'Zyprexa',atc:''}]},
-  alors:[{action:'ordonnance',categorie:'biologie',examens:['Numération'],frequence:{mode:'tous_les',valeur:2,unite:'mois'}}]}]}
+/* ===== Bibliothèque de règles (regles/v1/**, générée par tools/build.py) ===== */
+function examples(){return clone(window.BIBLIOTHEQUE.flatMap(g=>g.regles))}
 
 /* ===== État ===== */
 let RULES=[],CUR=0,ERR='';
-let TEST={today:'2026-11-18',age:45,sexe:'',pathologies:'Diabète de type 2',medicaments:'',vaccins:'',suivi:[{libelle:'HbA1c',date:'2026-08-08',valeur:7.2}]};
-try{const s=localStorage.getItem('gen-regles');RULES=s?JSON.parse(s):examples()}catch(e){RULES=examples()}
+let TEST={today:'2026-11-18',age:45,sexe:'',pathologies:'Diabète de type 2',meds:[],vaccins:'',atcd:'',documents:'',suivi:[{libelle:'HbA1c',date:'2026-08-08',valeur:7.2}]};
+try{const s=localStorage.getItem('gen-regles-v2');RULES=s?JSON.parse(s):examples()}catch(e){RULES=examples()}
 if(!RULES.length)RULES=examples();
 const R=()=>RULES[CUR];
-function save(){try{localStorage.setItem('gen-regles',JSON.stringify(RULES));document.getElementById('saved').textContent='Enregistré dans ce navigateur'}catch(e){document.getElementById('saved').textContent='Non enregistré (stockage indisponible) — pensez à exporter'}}
+function save(){try{localStorage.setItem('gen-regles-v2',JSON.stringify(RULES));document.getElementById('saved').textContent='Enregistré dans ce navigateur'}catch(e){document.getElementById('saved').textContent='Non enregistré (stockage indisponible) — pensez à exporter'}}
 
 /* ===== Arbre de conditions ===== */
 const node=p=>p.split('.').slice(1).reduce((n,i)=>n.conditions[+i],R().quand);
 const parent=p=>node(p.split('.').slice(0,-1).join('.'));
 const NUMF=(n,f)=>['valeur2','depuis_mois'].includes(f)||(f==='valeur'&&['age','element_suivi'].includes(n.type));
-function setL(p,f,v,re){const n=node(p);if(v===''||v==null)delete n[f];else n[f]=NUMF(n,f)&&!isNaN(v)?+v:v;if(n.type==='age'&&f==='op'&&v==='entre'&&n.valeur2==null)n.valeur2=n.valeur+10;
+function setL(p,f,v,re){const n=node(p);if(v===''||v==null)delete n[f];else n[f]=NUMF(n,f)&&!isNaN(v)?+v:(f==='atc'&&String(v).includes(','))?String(v).split(',').map(x=>x.trim()).filter(Boolean):v;if(n.type==='age'&&f==='op'&&v==='entre'&&n.valeur2==null)n.valeur2=n.valeur+10;
  if(re)renderEditor();else refresh()}
+function setG2(p,f,v){const n=node(p);if(v)n[f]=true;else delete n[f];refresh()}
 function setG(p,f,v){const n=node(p);if(f==='non'){if(v)n.non=true;else delete n.non}else n[f]=v;renderEditor()}
 function addNode(p,kind){const n=node(p);n.conditions.push(kind==='groupe'?{op:'ET',conditions:[]}:newLeaf(kind));renderEditor()}
 function delNode(p){const q=parent(p);q.conditions.splice(+p.split('.').pop(),1);renderEditor()}
@@ -99,8 +93,10 @@ function leafHTML(n,p){
  if(n.type==='age')body=`l'âge ${sel('op',[['=','='],['>=','≥'],['<=','≤'],['>','>'],['<','<'],['entre','entre']])} ${inp('valeur','45',null,4,'number')}${n.op==='entre'?` et ${inp('valeur2','75',null,4,'number')}`:''} ans`;
  if(n.type==='sexe')body=`le sexe est ${sel('valeur',[['F','féminin'],['M','masculin']],false)}`;
  if(n.type==='pathologie')body=`épisode de soin « ${inp('libelle','ex. Diabète','dl-path',22)} » présent`;
- if(n.type==='medicament')body=`traitement « ${inp('libelle','ex. Zyprexa','dl-med',16)} » ATC ${inp('atc','(optionnel)',null,9)}`;
+ if(n.type==='medicament')body=`traitement « ${inp('libelle','ex. Zyprexa','dl-med',16)} » ATC <input size="11" placeholder="(optionnel)" value="${esc(Array.isArray(n.atc)?n.atc.join(', '):(n.atc||''))}" onchange="setL('${p}','atc',this.value,false)">`;
  if(n.type==='element_suivi')body=`« ${inp('libelle','ex. HbA1c','dl-suivi',14)} » ${sel('op',[['existe','a un résultat'],['absent','n\'a pas de résultat'],['>','dernière valeur >'],['>=','dernière valeur ≥'],['<','dernière valeur <'],['<=','dernière valeur ≤'],['=','dernière valeur =']],false)} ${['existe','absent'].includes(n.op)?'':inp('valeur','7',null,5)} sur les ${inp('depuis_mois','tous',null,3,'number')} derniers mois`;
+ if(n.type==='antecedent_familial')body=`antécédent familial « ${inp('libelle','ex. cancer du côlon',null,20)} » <label><input type="checkbox" ${n.premier_degre?'checked':''} onchange="setG2('${p}','premier_degre',this.checked)"> 1ᵉʳ degré uniquement</label>`;
+ if(n.type==='compte_rendu')body=`compte rendu « ${inp('libelle','ex. Coloscopie',null,16)} » de moins de ${inp('depuis_mois','60',null,3,'number')} mois`;
  if(n.type==='vaccin')body=`vaccin « ${inp('libelle','ex. Tétanos','dl-vac',14)} » ${sel('statut',[['non_fait','non fait'],['fait','fait']],false)}`;
  return`<div class="leaf"><label><input type="checkbox" ${n.non?'checked':''} onchange="setG('${p}','non',this.checked)"> NON</label>
  <select onchange="chType('${p}',this.value)">${Object.entries(TYPES).map(([k,l])=>`<option value="${k}" ${n.type===k?'selected':''}>${l}</option>`).join('')}</select> ${body}
@@ -116,17 +112,19 @@ function treeHTML(n,p){
 /* ===== Actions ===== */
 const ordOf=a=>a.action==='ordonnance'?a:a.ordonnance;
 function setA(i,f,v){RULES[CUR].alors[i][f]=v;refresh()}
-function setO(i,f,v,re){const o=ordOf(R().alors[i]);if(f==='examens')o.examens=v.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean);else o[f]=v;re?renderEditor():refresh()}
+function setO(i,f,v,re){const o=ordOf(R().alors[i]);if(f==='examens')o.examens=v.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean);else if(f==='phase'){if(v)o.phase=v;else delete o.phase}else if(f==='cherche'){const m={};v.split(';').forEach(x=>{const[a,b]=x.split('=');if(a&&b)m[a.trim()]=b.trim()});if(Object.keys(m).length)o.cherche=m;else delete o.cherche}else o[f]=v;re?renderEditor():refresh()}
 function setF(i,f,v,re){const o=ordOf(R().alors[i]);if(f==='mode'){o.frequence={mode:v};if(v==='tous_les'){o.frequence.valeur=3;o.frequence.unite='mois'}if(v==='jalons')o.frequence.jalons=['T0','M12']}
- else if(f==='jalons')o.frequence.jalons=v.split(/[,;\s]+/).filter(Boolean);else o.frequence[f]=f==='valeur'?+v:v;re?renderEditor():refresh()}
+ else if(f==='jalons')o.frequence.jalons=v.split(/[,;\s]+/).filter(Boolean);else if(f==='max'){if(v)o.frequence.max=+v;else delete o.frequence.max}else o.frequence[f]=f==='valeur'?+v:v;re?renderEditor():refresh()}
 function addAct(k){R().alors.push(k==='ordonnance'?{action:'ordonnance',...newOrd()}:{action:'indicateur_prevention',libelle:'',niveau:'alerte',ordonnance:null});renderEditor()}
 function delAct(i){R().alors.splice(i,1);renderEditor()}
 function togglePre(i,on){R().alors[i].ordonnance=on?newOrd():null;renderEditor()}
 function ordHTML(i,o){const f=o.frequence;
- return`<div class="row"><label>Type <select onchange="setO(${i},'categorie',this.value,false)">${Object.entries(CATS).map(([k,l])=>`<option value="${k}" ${o.categorie===k?'selected':''}>${l}</option>`).join('')}</select></label></div>
+ return`<div class="row"><label>Type <select onchange="setO(${i},'categorie',this.value,false)">${Object.entries(CATS).map(([k,l])=>`<option value="${k}" ${o.categorie===k?'selected':''}>${l}</option>`).join('')}</select></label>
+ <label>Phase <select onchange="setO(${i},'phase',this.value,false)">${Object.entries(PHASES).map(([k,l])=>`<option value="${k}" ${(o.phase||'')===k?'selected':''}>${l}</option>`).join('')}</select></label></div>
  <label class="b">Éléments à prescrire (séparés par des virgules)</label><input style="width:100%" value="${esc(o.examens.join(', '))}" placeholder="NFS, Ionogramme, …" onchange="setO(${i},'examens',this.value,false)">
+ <label class="b">Correspondance « élément cherché dans les éléments de suivi » (optionnel) — ex. NFS=Hémoglobine ; EAL=Chol LDL</label><input style="width:100%" value="${esc(Object.entries(o.cherche||{}).map(([a,b])=>a+'='+b).join('; '))}" onchange="setO(${i},'cherche',this.value,false)">
  <div class="row"><label>Fréquence <select onchange="setF(${i},'mode',this.value,true)"><option value="une_fois" ${f.mode==='une_fois'?'selected':''}>une seule fois</option><option value="tous_les" ${f.mode==='tous_les'?'selected':''}>tous les…</option><option value="jalons" ${f.mode==='jalons'?'selected':''}>à des jalons (T0, M6…)</option></select></label>
- ${f.mode==='tous_les'?`<input type="number" min="1" size="3" style="width:60px" value="${f.valeur}" onchange="setF(${i},'valeur',this.value,false)"><select onchange="setF(${i},'unite',this.value,false)">${['semaines','mois','ans'].map(u=>`<option ${f.unite===u?'selected':''}>${u}</option>`).join('')}</select>`:''}
+ ${f.mode==='tous_les'?`<input type="number" min="1" size="3" style="width:60px" value="${f.valeur}" onchange="setF(${i},'valeur',this.value,false)"> à <input type="number" min="1" placeholder="(max)" style="width:60px" value="${f.max??''}" onchange="setF(${i},'max',this.value,false)"><select onchange="setF(${i},'unite',this.value,false)">${['semaines','mois','ans'].map(u=>`<option ${f.unite===u?'selected':''}>${u}</option>`).join('')}</select>`:''}
  ${f.mode==='jalons'?`<input value="${esc((f.jalons||[]).join(', '))}" onchange="setF(${i},'jalons',this.value,false)"> <span class="m">T0 = date de déclenchement, M6 = +6 mois…</span>`:''}</div>`}
 function actHTML(a,i){
  if(a.action==='ordonnance')return`<div class="act"><div class="row"><b>Générer une ordonnance</b><button class="x" onclick="delAct(${i})">✕</button></div>${ordHTML(i,a)}</div>`;
@@ -135,53 +133,37 @@ function actHTML(a,i){
  <select onchange="setA(${i},'niveau',this.value)"><option value="alerte" ${a.niveau==='alerte'?'selected':''}>Alerte</option><option value="info" ${a.niveau==='info'?'selected':''}>Information</option></select></div>
  <label><input type="checkbox" ${a.ordonnance?'checked':''} onchange="togglePre(${i},this.checked)"> Pré-générer une ordonnance associée</label>${a.ordonnance?`<div style="margin-left:18px">${ordHTML(i,a.ordonnance)}</div>`:''}</div>`}
 
-/* ===== Lecture en français ===== */
-function sentLeaf(n){let s='';const v=x=>x??'?';
- if(n.type==='age')s=n.op==='entre'?`l'âge est entre ${v(n.valeur)} et ${v(n.valeur2)} ans`:`l'âge ${n.op==='>='?'≥':n.op==='<='?'≤':n.op} ${v(n.valeur)} ans`;
- if(n.type==='sexe')s=`sexe ${n.valeur==='F'?'féminin':'masculin'}`;
- if(n.type==='pathologie')s=`épisode « ${v(n.libelle||'…')} » présent`;
- if(n.type==='medicament')s=`traitement par « ${n.libelle||n.atc||'…'} »`+(n.libelle&&n.atc?` (ATC ${n.atc})`:'');
- if(n.type==='vaccin')s=`vaccin « ${n.libelle||'…'} » ${n.statut==='fait'?'fait':'non fait'}`;
- if(n.type==='element_suivi'){const w=n.depuis_mois?` sur les ${n.depuis_mois} derniers mois`:'';
-  s=n.op==='existe'?`« ${n.libelle||'…'} » a un résultat${w}`:n.op==='absent'?`« ${n.libelle||'…'} » sans résultat${w}`:`dernière valeur de « ${n.libelle||'…'} » ${n.op==='>='?'≥':n.op==='<='?'≤':n.op} ${v(n.valeur)}${w}`}
- return n.non?`NON (${s})`:s}
-function sentTree(n){if(!n.conditions)return sentLeaf(n);const k=n.conditions.map(sentTree);const s=k.length?(k.length>1?'('+k.join(` ${n.op} `)+')':k[0]):'(aucune condition)';return n.non?`NON ${s}`:s}
-const freq=f=>f.mode==='une_fois'?'une seule fois':f.mode==='tous_les'?(+f.valeur===1?`tous les ${{semaines:'semaines',mois:'mois',ans:'ans'}[f.unite]}`.replace('tous les ans','tous les ans').replace('tous les semaines','toutes les semaines'):`tous les ${f.valeur} ${f.unite}`):`aux jalons ${(f.jalons||[]).join(', ')}`;
-const sentOrd=o=>`ordonnance de ${CATS[o.categorie].toLowerCase()} : ${o.examens.join(', ')||'(vide)'} — ${freq(o.frequence)}`;
+/* ===== Lecture en français (moteur partagé) ===== */
+const sentTree=Moteur.decrireArbre;
+const UNI1={semaines:'toutes les semaines',mois:'tous les mois',ans:'tous les ans'};
+const freq=f=>f.mode==='une_fois'?'une seule fois':f.mode==='tous_les'?(+f.valeur===1&&!f.max?UNI1[f.unite]:`tous les ${f.valeur}${f.max?' à '+f.max:''} ${f.unite}`):`aux jalons ${(f.jalons||[]).join(', ')}`;
+const PH={instauration:' (à l\'instauration)',entretien:' (après 1 an de traitement)'};
+const sentOrd=o=>`ordonnance de ${CATS[o.categorie].toLowerCase()}${PH[o.phase]||''} : ${o.examens.join(', ')||'(vide)'} — ${freq(o.frequence)}`;
 function sentAct(a){return a.action==='ordonnance'?'Générer une '+sentOrd(a):`Afficher ${a.niveau==='alerte'?'l\'alerte':'l\'information'} de prévention « ${a.libelle||'…'} »`+(a.ordonnance?` et pré-générer une ${sentOrd(a.ordonnance)}`:'')}
 
-/* ===== Évaluation (banc d'essai) ===== */
-function patient(){return{age:+TEST.age,sexe:TEST.sexe,pathos:TEST.pathologies.split(/[,;]/).map(s=>s.trim()).filter(Boolean),meds:TEST.medicaments.split(/[,;]/).map(s=>s.trim()).filter(Boolean),vacc:TEST.vaccins.split(/[,;]/).map(s=>s.trim()).filter(Boolean),suivi:TEST.suivi.filter(x=>x.libelle)}}
-const has=(list,l)=>l&&list.some(x=>norm(x).includes(norm(l)));
-const lastSuivi=(P,lib,mois)=>{const lim=mois?addMonths(TEST.today,-mois):'0000';return P.suivi.filter(x=>norm(x.libelle).includes(norm(lib))&&x.date>=lim&&x.date<=TEST.today).sort((a,b)=>b.date.localeCompare(a.date))[0]};
-function evalLeaf(n,P){let ok=false;
- if(n.type==='age'){const a=P.age;ok=n.op==='='?a===+n.valeur:n.op==='>='?a>=n.valeur:n.op==='<='?a<=n.valeur:n.op==='>'?a>n.valeur:n.op==='<'?a<n.valeur:(a>=n.valeur&&a<=n.valeur2)}
- if(n.type==='sexe')ok=P.sexe===n.valeur;
- if(n.type==='pathologie')ok=has(P.pathos,n.libelle);
- if(n.type==='medicament')ok=has(P.meds,n.libelle)||(n.atc&&has(P.meds,n.atc));
- if(n.type==='vaccin'){const f=has(P.vacc,n.libelle);ok=n.statut==='fait'?f:!f}
- if(n.type==='element_suivi'){const l=lastSuivi(P,n.libelle||'',n.depuis_mois);if(n.op==='existe')ok=!!l;else if(n.op==='absent')ok=!l;else if(l){const x=+l.valeur,y=+n.valeur;ok=n.op==='>'?x>y:n.op==='>='?x>=y:n.op==='<'?x<y:n.op==='<='?x<=y:x===y}}
- return n.non?!ok:ok}
-function evalTree(n,P){if(!n.conditions)return{ok:evalLeaf(n,P),t:sentLeaf(n)};
- const k=n.conditions.map(c=>evalTree(c,P));let ok=k.length?(n.op==='ET'?k.every(x=>x.ok):k.some(x=>x.ok)):false;if(n.non)ok=!ok;
- return{ok,t:`${n.non?'NON ':''}${n.op}${k.length?'':' (vide)'}`,k}}
+/* ===== Banc d'essai : patient fictif -> moteur partagé ===== */
+const csv=s=>String(s||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean);
+function patient(){const t=TEST;return{naissance:Moteur.addMonths(t.today,-12*(+t.age||0)),sexe:t.sexe,episodes:csv(t.pathologies).map(l=>({d:'',l})),
+ traitements:t.meds.filter(m=>m.label||m.atc).map(m=>({label:m.label||m.atc,atc:m.atc||null,debut:m.debut||t.today})),vaccins:csv(t.vaccins).map(l=>({libelle:l})),
+ atcdFam:csv(t.atcd).map(x=>{const[l,lien]=x.split(':');return{l:l.trim(),lien:(lien||'').trim()}}),documents:csv(t.documents).map(x=>{const[l,d]=x.split('@');return{libelle:l.trim(),date:(d||'').trim()}}),
+ suivi:t.suivi.filter(x=>x.libelle).map(x=>({date:x.date,lib:x.libelle,val:x.valeur,unit:''}))}}
 const trHTML=r=>`<li class="${r.ok?'ok':'no'}">${r.ok?'✔':'✘'} ${esc(r.t)}${r.k?`<ul class="tr">${r.k.map(trHTML).join('')}</ul>`:''}</li>`;
-function nextDue(P,ex,f){const l=lastSuivi(P,ex,0);
- if(f.mode==='une_fois')return{l,due:l?null:TEST.today,txt:l?'déjà fait le '+fr(l.date):'maintenant'};
- if(f.mode==='tous_les'){const m=f.unite==='mois'?f.valeur:f.unite==='ans'?f.valeur*12:0;const due=l?(f.unite==='semaines'?addDays(l.date,f.valeur*7):addMonths(l.date,m)):TEST.today;return{l,due,txt:due<=TEST.today?(l?'en retard depuis le '+fr(due):'maintenant (jamais fait)'):'le '+fr(due)}}
- const ds=(f.jalons||[]).map(j=>j==='T0'?TEST.today:/^M(\d+)$/.test(j)?addMonths(TEST.today,+j.slice(1)):/^S(\d+)$/.test(j)?addDays(TEST.today,7*+j.slice(1)):null).filter(Boolean);
- return{l,due:ds[0],txt:'jalons : '+ds.map(fr).join(', ')}}
-function ordTest(o,P){return`<table><tr><th>Élément</th><th>Dernier résultat</th><th>À prescrire</th></tr>${o.examens.map(e=>{const d=nextDue(P,e,o.frequence);return`<tr><td>${esc(e)}</td><td>${d.l?fr(d.l.date)+' — '+esc(d.l.valeur):'<span class="m">aucun</span>'}</td><td>${esc(d.txt)}</td></tr>`}).join('')}</table>`}
-function testHTML(){const P=patient();
- return RULES.map(r=>{if(!r.actif)return`<div class="m off">⏸ ${esc(r.libelle)} — règle désactivée</div>`;const e=evalTree(r.quand,P);
-  return`<div class="act"><span class="pill ${e.ok?'p-ok':'p-no'}">${e.ok?'Déclenchée':'Non déclenchée'}</span> <b>${esc(r.libelle)}</b><ul class="tr">${trHTML(e)}</ul>
-  ${e.ok?r.alors.map(a=>a.action==='ordonnance'?`<div><b>→ Ordonnance de ${CATS[a.categorie].toLowerCase()}</b> (${esc(freq(a.frequence))})${ordTest(a,P)}</div>`:`<div><b>→ ${a.niveau==='alerte'?'🔔 Alerte':'ℹ Information'} : ${esc(a.libelle)}</b>${a.ordonnance?`<div style="margin-left:14px">Pré-générer une ordonnance de ${CATS[a.ordonnance.categorie].toLowerCase()} (${esc(freq(a.ordonnance.frequence))})${ordTest(a.ordonnance,P)}</div>`:''}</div>`).join(''):''}</div>`}).join('')}
+const fmtPer=d=>{const y=d/365.25;if(d>=330&&Math.abs(y-Math.round(y))<.05){const n=Math.round(y);return n+' an'+(n>1?'s':'')}const m=d/30.4375;return m>=1.5?Math.round(m)+' mois':Math.round(d/7)+' sem'};
+const ST={late:['En retard','#c8281c'],soon:['Bientôt','#d98a00'],ok:['À jour','#1c7c3c'],presc:['Prescrit','#1b5fa8'],na:['Plan réalisé','#7a8794']};
+function tab(rows){return rows.length?`<table><tr><th>Élément</th><th>Règles</th><th>Périodicité</th><th>Dernier résultat</th><th>Échéance</th><th>Statut</th></tr>${rows.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${[...new Set(w.srcs.map(s=>s.r.libelle))].map(x=>`<span class="m">${esc(x)}</span>`).join('<br>')}</td>
+ <td>${[w.jal.length?'jalons '+w.jal.join(', '):'',w.days?'tous les '+fmtPer(w.days):''].filter(Boolean).join('<br>')||'une fois'}</td><td>${w.last?fr(w.last.date)+' — '+esc(w.last.val):'<span class="m">aucun</span>'}</td><td>${w.due?fr(w.due):'—'}</td>
+ <td><span class="pill" style="background:${ST[w.st][1]}">${w.st==='late'&&w.never?'Jamais fait':ST[w.st][0]}</span></td></tr>`).join('')}</table>`:'<div class="m">—</div>'}
+function testHTML(){const C=Moteur.planifier(RULES,patient(),{today:TEST.today});
+ const regles=C.ev.map(({r,ev})=>`<details><summary><span class="pill ${ev.ok?'p-ok':'p-no'}">${ev.inactive?'Désactivée':ev.ok?'Déclenchée':'Non déclenchée'}</span> <b>${esc(r.libelle)}</b></summary>${ev.inactive?'':`<ul class="tr">${trHTML(ev)}</ul>`}</details>`).join('');
+ const ind=C.indicateurs.map(i=>`<div class="act">${i.niveau==='alerte'?'🔔 <b>Alerte</b>':'ℹ <b>Information</b>'} : ${esc(i.libelle)} <span class="m">— ${esc(i.r.libelle)}</span>${i.ordonnance?`<br><span class="m">pré-génère une ${esc(sentOrd(i.ordonnance))}</span>`:''}</div>`).join('')||'<div class="m">Aucun indicateur.</div>';
+ return`<h4>Règles évaluées</h4>${regles}<h4>Indicateurs de prévention</h4>${ind}<h4>Plan fusionné — biologie (période la plus courte entre règles)</h4>${tab(C.bio)}<h4>Plan fusionné — non biologique (prévention)</h4>${tab(C.prev)}`}
 
 /* ===== Rendu ===== */
 function renderLib(){document.getElementById('lib').innerHTML=RULES.map((r,i)=>`<div class="it ${i===CUR?'on':''} ${r.actif?'':'off'}" onclick="CUR=${i};render()"><span>${esc(r.libelle||'(sans titre)')}</span><input type="checkbox" title="Règle activée" ${r.actif?'checked':''} onclick="event.stopPropagation()" onchange="RULES[${i}].actif=this.checked;save();renderLib();refresh()"></div>`).join('')}
 function renderEditor(){const r=R();
  document.getElementById('ed').innerHTML=`<div class="box"><h3 class="h-n">Règle</h3><div class="in"><div class="row"><input style="flex:1;min-width:220px;font-weight:600" value="${esc(r.libelle)}" onchange="R().libelle=this.value;R().id=slug(this.value)+'-'+CUR;renderLib();refresh()">
  <label><input type="checkbox" ${r.actif?'checked':''} onchange="R().actif=this.checked;renderLib();refresh()"> Activée</label><button class="x" onclick="delRule()">Supprimer la règle</button></div>
+ ${r.origine?`<div class="m">Origine : ${esc(r.origine)}</div>`:''}${(r.references||[]).length?`<div class="m">Sources : ${r.references.map(x=>x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.libelle)}</a>`:esc(x.libelle)).join(' · ')}</div>`:''}${(r.points_a_valider||[]).map(x=>`<div class="note"><b>À valider :</b> ${esc(x)}</div>`).join('')}
  <div class="row"><span class="m">Évaluer la règle :</span>${Object.entries(DECL).map(([k,l])=>`<label><input type="checkbox" ${r.evaluer_quand.includes(k)?'checked':''} onchange="togEv('${k}',this.checked)"> ${l}</label>`).join(' ')}</div></div></div>
  <div class="box"><h3 class="h-si">SI … (conditions)</h3><div class="in">${treeHTML(r.quand,'r')}</div></div>
  <div class="box"><h3 class="h-alors">ALORS … (ce que la règle génère)</h3><div class="in">${r.alors.map(actHTML).join('')||'<div class="m">Aucune action.</div>'}
@@ -195,9 +177,12 @@ function renderTestForm(){const t=TEST;document.getElementById('testform').inner
  <label class="b">Date du jour<input type="date" value="${t.today}" onchange="TEST.today=this.value;refresh()"></label>
  <label class="b">Âge<input type="number" value="${t.age}" onchange="TEST.age=this.value;refresh()"></label>
  <label class="b">Sexe<select onchange="TEST.sexe=this.value;refresh()"><option value="">non précisé</option><option value="F" ${t.sexe==='F'?'selected':''}>F</option><option value="M" ${t.sexe==='M'?'selected':''}>M</option></select></label></div>
- <label class="b">Pathologies / épisodes (séparés par des virgules)</label><input style="width:100%" value="${esc(t.pathologies)}" onchange="TEST.pathologies=this.value;refresh()">
- <label class="b">Médicaments en cours</label><input style="width:100%" value="${esc(t.medicaments)}" placeholder="ex. Zyprexa" onchange="TEST.medicaments=this.value;refresh()">
- <label class="b">Vaccins faits</label><input style="width:100%" value="${esc(t.vaccins)}" placeholder="ex. DTCP" onchange="TEST.vaccins=this.value;refresh()">
+ <label class="b">Pathologies / épisodes de soin (virgules)</label><input style="width:100%" value="${esc(t.pathologies)}" onchange="TEST.pathologies=this.value;refresh()">
+ <label class="b">Antécédents familiaux (libellé:lien, virgules — ex. Cancer du côlon:Mère)</label><input style="width:100%" value="${esc(t.atcd)}" onchange="TEST.atcd=this.value;refresh()">
+ <label class="b">Vaccins faits (virgules)</label><input style="width:100%" value="${esc(t.vaccins)}" placeholder="ex. Tétanos" onchange="TEST.vaccins=this.value;refresh()">
+ <label class="b">Comptes rendus (libellé@date, virgules — ex. Coloscopie@2024-01-01)</label><input style="width:100%" value="${esc(t.documents)}" onchange="TEST.documents=this.value;refresh()">
+ <label class="b">Traitements en cours (nom, code ATC, date de début)</label>${t.meds.map((m,i)=>`<div class="row"><input value="${esc(m.label)}" placeholder="ex. Zyprexa" list="dl-med" onchange="TEST.meds[${i}].label=this.value;refresh()"><input size="9" placeholder="ATC" value="${esc(m.atc)}" onchange="TEST.meds[${i}].atc=this.value;refresh()"><input type="date" value="${m.debut}" onchange="TEST.meds[${i}].debut=this.value;refresh()"><button class="x" onclick="TEST.meds.splice(${i},1);renderTestForm();refresh()">✕</button></div>`).join('')}
+ <button onclick="TEST.meds.push({label:'',atc:'',debut:TEST.today});renderTestForm()">+ Traitement</button>
  <label class="b">Éléments de suivi (libellé, date, valeur)</label>${t.suivi.map((s,i)=>`<div class="row"><input value="${esc(s.libelle)}" list="dl-suivi" onchange="TEST.suivi[${i}].libelle=this.value;refresh()"><input type="date" value="${s.date}" onchange="TEST.suivi[${i}].date=this.value;refresh()"><input size="6" value="${esc(s.valeur)}" onchange="TEST.suivi[${i}].valeur=this.value;refresh()"><button class="x" onclick="TEST.suivi.splice(${i},1);renderTestForm();refresh()">✕</button></div>`).join('')}
  <button onclick="TEST.suivi.push({libelle:'',date:TEST.today,valeur:''});renderTestForm()">+ Résultat</button>`}
 function refresh(){const r=R();save();const s=document.getElementById('sent');if(!s)return;
@@ -208,7 +193,7 @@ const togEv=(k,on)=>{const e=R().evaluer_quand;if(on&&!e.includes(k))e.push(k);i
 function addRule(){RULES.push({id:'nouvelle-regle-'+RULES.length,libelle:'Nouvelle règle',actif:true,statut_validation:'a_valider',evaluer_quand:['ouverture_dossier'],quand:{op:'ET',conditions:[]},alors:[]});CUR=RULES.length-1;render()}
 function dupRule(){const c=clone(R());c.libelle+=' (copie)';c.id=slug(c.libelle)+'-'+RULES.length;RULES.splice(CUR+1,0,c);CUR++;render()}
 function delRule(){if(!confirm('Supprimer cette règle ?'))return;RULES.splice(CUR,1);if(!RULES.length)RULES=[{id:'nouvelle-regle-0',libelle:'Nouvelle règle',actif:true,statut_validation:'a_valider',evaluer_quand:['ouverture_dossier'],quand:{op:'ET',conditions:[]},alors:[]}];CUR=0;render()}
-function resetAll(){if(confirm('Remplacer toutes les règles par les 3 exemples ?')){RULES=examples();CUR=0;render()}}
+function resetAll(){if(confirm('Remplacer toutes les règles par la bibliothèque d\'origine ?')){RULES=examples();CUR=0;render()}}
 function dl(name,obj){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));a.download=name;a.click()}
 const exportOne=()=>dl(R().id+'.json',R());
 const exportAll=()=>dl('regles-plan-de-soins.json',{version:1,regles:RULES});

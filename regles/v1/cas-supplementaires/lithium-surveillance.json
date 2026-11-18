@@ -1,0 +1,88 @@
+{
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Recommandation officielle lue sur la source citée — non validée cliniquement",
+  "id": "lithium-surveillance",
+  "libelle": "Traitement par lithium — bilan initial et lithiémies de départ",
+  "evaluer_quand": [
+    "nouvelle_prescription",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "medicament",
+        "atc": "N05AN01"
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "ordonnance",
+      "phase": "instauration",
+      "categorie": "biologie",
+      "examens": [
+        "Créatinine",
+        "Clairance de la créatinine",
+        "Calcémie",
+        "Protéinurie",
+        "Ionogramme",
+        "NFS",
+        "TSH",
+        "Glycémie à jeun"
+      ],
+      "frequence": {
+        "mode": "jalons",
+        "jalons": [
+          "T0"
+        ]
+      }
+    },
+    {
+      "action": "ordonnance",
+      "phase": "instauration",
+      "categorie": "autre",
+      "examens": [
+        "ECG",
+        "EEG"
+      ],
+      "frequence": {
+        "mode": "jalons",
+        "jalons": [
+          "T0"
+        ]
+      }
+    },
+    {
+      "action": "ordonnance",
+      "phase": "instauration",
+      "categorie": "biologie",
+      "examens": [
+        "Lithiémie"
+      ],
+      "frequence": {
+        "mode": "jalons",
+        "jalons": [
+          "S1",
+          "S2"
+        ]
+      }
+    }
+  ],
+  "points_a_valider": [
+    "Source = RCP de TERALITHE LP 400 mg uniquement : vérifier les autres spécialités contenant du lithium.",
+    "Lithiémies à J7, J14 « et si nécessaire J21 » : J21 non représenté.",
+    "Après lithiémie efficace : « toutes les semaines pendant le premier mois », puis mensuelle pendant le premier trimestre, puis tous les deux mois. Le point de départ (date d'obtention de la lithiémie efficace) n'est pas représentable : non encodé.",
+    "Pendant le traitement, le RCP demande des « contrôles réguliers » de la créatininémie et de la calcémie, une surveillance régulière de l'ECG et de la TSH, sans donner de fréquence : à définir par le médecin (rien n'est inventé ici).",
+    "Le bilan « avant le traitement » est placé à T0 (date de début) : à affiner.",
+    "Glycémie : le RCP demande un contrôle en cas de prise de poids (condition non représentée)."
+  ],
+  "references": [
+    {
+      "libelle": "Base de données publique des médicaments — RCP TERALITHE LP 400 mg (rubriques 4.2, 4.4, 5.1 ; mis à jour le 27/07/2026)",
+      "url": "http://base-donnees-publique.medicaments.gouv.fr/medicament/67292476/extrait",
+      "extrait": "Lithium, code ATC : N05AN01 ; lithiémies déterminées à J7, J14 et si nécessaire J21"
+    }
+  ]
+}

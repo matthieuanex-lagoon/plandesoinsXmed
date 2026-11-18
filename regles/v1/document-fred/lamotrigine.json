@@ -1,0 +1,85 @@
+{
+  "id": "lamotrigine",
+  "libelle": "Patient sous lamotrigine",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Document « Plan de soins » (Fred), transcrit dans regles/lamotrigine.yaml",
+  "evaluer_quand": [
+    "nouvelle_prescription",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "medicament",
+        "atc": [
+          "N03AX09"
+        ]
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "ordonnance",
+      "phase": "instauration",
+      "categorie": "biologie",
+      "examens": [
+        "NFS",
+        "Ionogramme",
+        "EAL",
+        "Bilan hépatique",
+        "Créatinine / Clairance de la créatinine"
+      ],
+      "frequence": {
+        "mode": "jalons",
+        "jalons": [
+          "T0",
+          "M12"
+        ]
+      }
+    },
+    {
+      "action": "ordonnance",
+      "phase": "instauration",
+      "categorie": "biologie",
+      "examens": [
+        "Glycémie"
+      ],
+      "frequence": {
+        "mode": "jalons",
+        "jalons": [
+          "T0",
+          "M6",
+          "M12"
+        ]
+      }
+    },
+    {
+      "action": "ordonnance",
+      "categorie": "biologie",
+      "examens": [
+        "NFS",
+        "Ionogramme",
+        "Glycémie",
+        "EAL",
+        "Bilan hépatique",
+        "Clairance de la créatinine"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 12,
+        "unite": "mois"
+      },
+      "phase": "entretien",
+      "cherche": {
+        "NFS": "Hémoglobine",
+        "Ionogramme": "Sodium",
+        "Glycémie": "Glycémie",
+        "EAL": "Chol LDL",
+        "Bilan hépatique": "SGOT",
+        "Clairance de la créatinine": "Clairance de la créatinine"
+      }
+    }
+  ]
+}
