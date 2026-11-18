@@ -19,7 +19,7 @@ prescription biologique.
 | `docs/05-convergence-et-cas.md` | Format unique et Protase, écart avec les sources officielles, cas sourcés |
 | `protase/protase.js` | **Protase**, le moteur de règles (conditions, phases, fusion, échéances) |
 | `tests/protase.test.js` | Tests de Protase (`node tests/protase.test.js`) |
-| `generateur/index.html` | **Générateur de règles** (conditions ET/OU/NON → ordonnances, indicateurs de prévention) |
+| `generateur/index.html` | **Générateur SAFE** (Si · Alors · Faire · Échéance) : éditeur de règles (conditions ET/OU/NON → ordonnances, indicateurs de prévention) |
 | `docs/04-generateur.md` | Générateur : mode d'emploi, modèle, questions ouvertes |
 | `demo/`, `tools/build_demo.py` | Démo publiée (accueil avec essai en direct + maquette + éditeur) ; `python3 tools/build_demo.py` après `tools/build.py` |
 | `docs/xmed/` | Captures d'écran XMed de référence (dépôt privé) |
@@ -31,6 +31,10 @@ prescription biologique.
 ## Nom du moteur : Protase
 
 **Protase** désigne le moteur qui lit les règles « si… alors » et produit ordonnances, alertes et échéances. En grammaire, la *protase* est la proposition conditionnelle (le « si ») d'une phrase ; l'*apodose* est la conséquence (le « alors »).
+
+## Nom du générateur : SAFE
+
+**SAFE** = **S**i · **A**lors · **F**aire · **É**chéance. C'est l'éditeur de règles : on y écrit la condition, l'action (ordonnance, alerte) et le rythme de suivi, puis on teste la règle sur un patient fictif. Protase est le moteur qui lit ces règles.
 
 ## Principe de prudence
 

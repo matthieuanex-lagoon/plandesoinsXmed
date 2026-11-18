@@ -1,4 +1,4 @@
-# Générateur de règles de plan de soins
+# Générateur SAFE (Si · Alors · Faire · Échéance)
 
 `generateur/index.html` — à ouvrir dans un navigateur, aucune installation. Module **indépendant** de la maquette `maquette/` :
 il sert à *écrire* les règles ; le moteur de XMed (ou la maquette, plus tard) les *lit*.

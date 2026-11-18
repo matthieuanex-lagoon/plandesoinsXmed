@@ -25,7 +25,7 @@ render();
 open("demo/artifact/maquette.html", "w").write(m)
 # Générateur : lien retour, ancres (#lithium, #diabete, #tetanos, #sein), export = copie dans le presse-papiers (les téléchargements sont bloqués dans l'artefact)
 g = open("generateur/generateur-autonome.html").read()
-g = patch(g, [('<div class="top"><b>Générateur de règles — plan de soins</b>', '<div class="top">' + back + '<b>Générateur de règles — plan de soins</b>'),
+g = patch(g, [('<div class="top"><b>Générateur SAFE</b>', '<div class="top">' + back + '<b>Générateur SAFE</b>'),
  ("const exportOne=()=>dl(R().id+'.json',R());", "const copyText=t=>{try{navigator.clipboard.writeText(t)}catch(e){}};\nconst exportOne=()=>copyText(JSON.stringify(R(),null,2));"),
  ("const exportAll=()=>dl('regles-plan-de-soins.json',{version:1,regles:RULES});", "const exportAll=()=>copyText(JSON.stringify({version:1,regles:RULES},null,2));"),
  ("Exporter (JSON)", "Copier tout (JSON)"), ("Télécharger cette règle", "Copier la règle"),
