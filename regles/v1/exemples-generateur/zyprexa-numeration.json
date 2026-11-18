@@ -1,0 +1,34 @@
+{
+  "id": "zyprexa-numeration",
+  "libelle": "Zyprexa — numération",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "evaluer_quand": [
+    "nouvelle_prescription",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "medicament",
+        "libelle": "Zyprexa",
+        "atc": ""
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "ordonnance",
+      "categorie": "biologie",
+      "examens": [
+        "Numération"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 2,
+        "unite": "mois"
+      }
+    }
+  ]
+}

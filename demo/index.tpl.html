@@ -1,0 +1,203 @@
+<title>SAFE</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Concept : une page de dossier médical, sobre. Règles lues comme une ordonnance (SI / ALORS en mono). */
+:root{
+  --bg:#F2F5F6; --surface:#FFFFFF; --ink:#12232B; --muted:#52646D; --line:#D3DDE1;
+  --accent:#0E6E78; --accent-ink:#FFFFFF; --accent-soft:#DCEEF0;
+  --warn:#8A5200; --warn-bg:#FFF1D6; --ok:#1D6B3F; --late:#B3261E;
+  color-scheme:light; --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+.wrap{max-width:1040px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.6rem,7vw,4.2rem);letter-spacing:-.02em;font-weight:700}
+h2{font-size:1.45rem;font-weight:700;margin-bottom:6px}h3{font-size:1.05rem;font-weight:500}
+a{color:var(--accent)}a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hero{padding:44px 0 20px;display:grid;gap:14px}
+.kicker{font-family:var(--f-mono);font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0}
+.lede{font-size:1.2rem;max-width:44rem;margin:0}
+.flag{display:inline-flex;gap:8px;align-items:flex-start;background:var(--warn-bg);color:var(--warn);padding:8px 12px;border-radius:6px;font-size:.88rem;max-width:44rem}
+section{padding:26px 0;border-top:1px solid var(--line)}
+.sub{color:var(--muted);margin:0 0 16px;max-width:46rem}
+.try{display:grid;grid-template-columns:minmax(250px,320px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:760px){.try{grid-template-columns:minmax(0,1fr)}}
+.panel{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.panel h3{margin-bottom:10px}
+.field{display:grid;gap:4px;margin-bottom:12px}.field>label,.field>span{font-size:.8rem;color:var(--muted)}
+.field input[type=range]{width:100%;accent-color:var(--accent)}
+select,input[type=number]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;max-width:100%}
+.check{display:flex;gap:8px;align-items:center;margin-bottom:8px}.check input{accent-color:var(--accent)}
+.age-out{font-family:var(--f-mono);font-size:1.05rem}
+.result h3{margin:14px 0 6px;font-size:.78rem;font-family:var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}.result h3:first-child{margin-top:0}
+.alert{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--late);border-left-width:4px;border-radius:6px;padding:8px 12px;margin-bottom:8px;background:var(--surface)}
+.alert b{font-weight:600}.alert small{color:var(--muted);display:block}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:6px 10px 6px 0;border-bottom:1px solid var(--line);vertical-align:top;font-size:.9rem}
+th{font-size:.75rem;color:var(--muted);font-weight:500}
+.tw{overflow-x:auto}.tw table{min-width:520px}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:.76rem;font-weight:500;border:1px solid currentColor;white-space:nowrap}
+.p-late{color:var(--late)}.p-soon{color:var(--warn)}.p-ok{color:var(--ok)}.p-na{color:var(--muted)}
+.src{font-size:.78rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{background:var(--accent-soft);border-radius:5px;padding:2px 8px;font-size:.8rem}
+.empty{color:var(--muted);padding:12px 0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.card p{margin:0;color:var(--muted);font-size:.9rem;flex:1}
+.btn{display:inline-block;background:var(--accent);color:var(--accent-ink);text-decoration:none;border-radius:6px;padding:7px 12px;font-weight:600;font-size:.88rem;align-self:flex-start}
+.btn:hover{filter:brightness(1.08)}
+.flow{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;overflow-x:auto}
+.group{margin-bottom:22px}.group h3{margin-bottom:2px}.group .sub{margin-bottom:8px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:6px}
+summary{cursor:pointer;padding:9px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;justify-content:space-between}
+summary b{font-weight:600}
+.rule{padding:2px 14px 12px;font-family:var(--f-mono);font-size:.8rem;line-height:1.6}
+.rule .k{color:var(--accent);font-weight:500}.rule p{margin:6px 0}
+.rule .meta{font-family:var(--f-body);font-size:.82rem;color:var(--muted)}
+.rule .todo{font-family:var(--f-body);font-size:.82rem;background:var(--warn-bg);color:var(--warn);padding:6px 10px;border-radius:5px;margin:6px 0}
+ol.q{padding-left:1.2rem;max-width:46rem}ol.q li{margin-bottom:8px}
+footer{padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+@media (prefers-reduced-motion:no-preference){.btn{transition:filter .15s}}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <p class="kicker">Plan de soins · démonstration</p>
+  <h1>SAFE</h1>
+  <p class="lede">Le moteur qui lit des règles « si… alors » et prépare, pour chaque patient, les ordonnances, les alertes de prévention et les échéances de suivi.</p>
+  <p class="flag"><span aria-hidden="true">⚠</span><span>Patient fictif. Règles non validées cliniquement, à relire par un médecin. Rien n'est branché sur XMed.</span></p>
+</header>
+
+<section id="essai">
+  <h2>Essayez sur un patient fictif</h2>
+  <p class="sub">Changez le patient : SAFE relit les 12 règles chargées et recalcule ce qui est à faire, au 18/11/2026.</p>
+  <div class="try">
+    <div class="panel" aria-label="Patient fictif">
+      <h3>Patient</h3>
+      <div class="field"><label for="age">Âge</label><input type="range" id="age" min="18" max="90" value="46"><span class="age-out" id="age-out">46 ans</span></div>
+      <div class="field"><label for="sexe">Sexe</label><select id="sexe"><option value="">non précisé</option><option value="F">féminin</option><option value="M">masculin</option></select></div>
+      <div class="field"><label for="drug">Traitement instauré aujourd'hui</label><select id="drug"></select></div>
+      <div class="field"><label for="hba1c">Dernière HbA1c (08/08/2026), en %</label><input type="number" id="hba1c" step="0.1" min="4" max="14" value="7.2"></div>
+      <div class="check"><input type="checkbox" id="diab" checked><label for="diab">Épisode « diabète de type 2 »</label></div>
+      <div class="check"><input type="checkbox" id="dtcap"><label for="dtcap">Vaccin dTcaP fait</label></div>
+    </div>
+    <div class="panel result" id="out" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="parcours">
+  <h2>Parcours dans la maquette</h2>
+  <p class="sub">Les écrans complets, avec le même moteur. Chaque lien ouvre un scénario prêt à l'emploi.</p>
+  <div class="cards">
+    <div class="card"><h3>La prescription biologique pré-remplie</h3><p>La vraie fenêtre de prescription, remplie par le plan de soins : cochée si le délai est dépassé, à venir sinon.</p><a class="btn" href="maquette.html#biologie">Ouvrir la prescription</a></div>
+    <div class="card"><h3>Prescrire la lamotrigine</h3><p>Validez l'ordonnance : une règle existe, la ligne du traitement est colorée et la biologie se prépare (T0, M6, M12).</p><a class="btn" href="maquette.html#lamotrigine">Prescrire</a></div>
+    <div class="card"><h3>Prescrire le lithium</h3><p>Bilan avant traitement, puis lithiémies à J7 et J14, d'après le RCP.</p><a class="btn" href="maquette.html#lithium">Prescrire</a></div>
+    <div class="card"><h3>Éléments de suivi</h3><p>Le « Prochain » est proposé par le plan. Changez la date : elle devient la périodicité de ce patient.</p><a class="btn" href="maquette.html#suivi">Ouvrir les éléments</a></div>
+    <div class="card"><h3>Prévention et chronologie</h3><p>Examens, imagerie et vaccins du plan, avec la chronologie et « Fait » / « Refusé ».</p><a class="btn" href="maquette.html#prevention">Ouvrir la prévention</a></div>
+    <div class="card"><h3>Intégrer un résultat HPRIM</h3><p>Un résultat arrive du laboratoire : le « Prochain » est proposé automatiquement avant l'incorporation.</p><a class="btn" href="maquette.html#hprim">Intégrer</a></div>
+    <div class="card"><h3>Corriger une règle</h3><p>Périodicité livrée et corrigée côte à côte, avec retour à la règle d'origine.</p><a class="btn" href="maquette.html#regles">Voir les règles</a></div>
+    <div class="card"><h3>Écrire une règle avec SAFE</h3><p>Mode simple en 3 étapes (pour qui, que faire, essayer), ou mode avancé avec conditions ET / OU / NON.</p><a class="btn" href="generateur.html#lithium">Ouvrir le Générateur SAFE</a></div>
+  </div>
+</section>
+
+<section id="principe">
+  <h2>Comment ça marche</h2>
+  <p class="sub">Une règle est une donnée (un fichier JSON), pas un programme. Le même moteur lit toutes les règles, à chaque événement choisi dans la règle.</p>
+  <div class="flow"><pre class="mermaid">flowchart LR
+  A[Dossier du patient] --> P((SAFE))
+  R[Règles si… alors] --> P
+  P --> O[Ordonnances pré-remplies]
+  P --> V[Alertes de prévention]
+  P --> E[Échéances de suivi]</pre></div>
+</section>
+
+<section id="regles">
+  <h2>Les règles chargées</h2>
+  <p class="sub">Trois origines. Les cas sourcés citent la page officielle lue et listent ce qui n'est pas encodé.</p>
+  <div id="rules"></div>
+</section>
+
+<section id="decisions">
+  <h2>À trancher ensuite</h2>
+  <ol class="q">
+    <li><b>Dépistage colorectal.</b> Le document dit 50 à 75 ans, la page officielle lue dit 50 à 74 ans.</li>
+    <li><b>Périodicité saisie pour un patient.</b> Prime-t-elle sur la règle quand elle est plus longue ?</li>
+    <li><b>Lithium.</b> Le RCP demande des contrôles « réguliers » sans fréquence chiffrée : à fixer par le médecin.</li>
+    <li><b>Rappel dTcaP.</b> Fenêtre de temps pour « vaccin fait » et rattrapage après l'âge fixe.</li>
+    <li><b>Écriture des règles.</b> Qui peut les créer, les modifier et les activer ?</li>
+  </ol>
+</section>
+
+<footer>SAFE : Si · Alors · Faire · Échéance. Le moteur lit les règles, le générateur les écrit. Démo générée à partir du dépôt du projet.</footer>
+</div>
+
+<script>/*SAFE*/</script>
+<script>
+const BIB = /*BIBLIO*/;
+const RULES = BIB.flatMap(g => g.regles);
+const TODAY = '2026-11-18';
+const DRUGS = [['', 'Aucun traitement concerné', ''], ['N03AX09', 'Lamotrigine (ATC N03AX09)', 'LAMOTRIGINE'], ['C09C', 'Médicament ATC C09C (exemple)', 'EXEMPLE C09C'], ['N05AN01', 'Lithium (ATC N05AN01)', 'LITHIUM']];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fr = s => s ? s.split('-').reverse().join('/') : '';
+const CATS = {biologie:'biologie', imagerie:'imagerie', traitement:'traitement', vaccin:'vaccin', consultation:'consultation', autre:'prévention'};
+const DE = c => /^[aeiouyéèh]/i.test(c) ? "d'" + c : 'de ' + c;
+const UNI1 = {semaines:'toutes les semaines', mois:'tous les mois', ans:'tous les ans'};
+const jalLabel = j => { if (j === 'T0') return 'à l\'instauration'; const m = /^([JSM])(\d+)(?:-(\d+))?$/.exec(j); if (!m) return j; const u = {J:['jour','jours'], S:['semaine','semaines'], M:['mois','mois']}[m[1]]; return 'après ' + (m[3] ? `${m[2]} à ${m[3]} ${u[1]}` : `${m[2]} ${+m[2] > 1 ? u[1] : u[0]}`); };
+const jalShort = jalLabel;
+const freq = f => f.mode === 'une_fois' ? 'une seule fois' : f.mode === 'tous_les' ? (+f.valeur === 1 && !f.max ? UNI1[f.unite] : `tous les ${f.valeur}${f.max ? ' à ' + f.max : ''} ${f.unite}`) : (f.jalons || []).map(jalShort).join(', ');
+const PH = {instauration:' (à l\'instauration)', entretien:' (après 1 an de traitement)'};
+const sentOrd = o => `ordonnance ${DE(CATS[o.categorie])}${PH[o.phase] || ''} : ${o.examens.join(', ')} — ${freq(o.frequence)}`;
+const sentAct = a => a.action === 'ordonnance' ? 'générer une ' + sentOrd(a) : `afficher ${a.niveau === 'alerte' ? 'l\'alerte' : 'l\'information'} « ${a.libelle} »` + (a.ordonnance ? ' et pré-générer une ' + sentOrd(a.ordonnance) : '');
+
+/* ---- Essai en direct ---- */
+$('drug').innerHTML = DRUGS.map(d => `<option value="${d[0]}">${esc(d[1])}</option>`).join('');
+function patient() {
+  const age = +$('age').value, drug = DRUGS.find(d => d[0] === $('drug').value), h = $('hba1c').value;
+  const suivi = [{date:'2025-11-12', lib:'Cholestérol total', val:3, unit:'g/l'}, {date:'2025-11-12', lib:'Cholestérol LDL', val:1.5, unit:'g/l'}, {date:'2025-06-01', lib:'Hémoglobine', val:12.2, unit:'g/100ml'}];
+  if (h !== '') suivi.push({date:'2026-08-08', lib:'HbA1c', val:+h, unit:'%'});
+  return {naissance: SAFE.addMonths(TODAY, -12 * age), sexe: $('sexe').value, episodes: $('diab').checked ? [{d:'2025-09-04', l:'Diabète de type 2'}] : [],
+    atcdFam: [], documents: [], vaccins: $('dtcap').checked ? [{libelle:'dTcaP'}] : [],
+    traitements: drug && drug[0] ? [{label: drug[2], atc: drug[0], debut: TODAY}] : [], suivi};
+}
+const ST = {late:['En retard','p-late'], soon:['Bientôt','p-soon'], ok:['À jour','p-ok'], presc:['Prescrit','p-ok'], na:['Plan réalisé','p-na']};
+const pill = w => `<span class="pill ${ST[w.st][1]}">${w.st === 'late' && w.never ? 'Jamais fait' : ST[w.st][0]}</span>`;
+const short = r => r.libelle.replace(/^(Patients? sous |Règle |Requête — )/, '');
+function table(rows) {
+  return `<div class="tw"><table><thead><tr><th>Élément</th><th>Règles</th><th>Échéance</th><th>Statut</th></tr></thead><tbody>${rows.map(w =>
+    `<tr><td><b>${esc(w.label)}</b></td><td class="src">${[...new Set(w.srcs.map(s => short(s.r)))].map(esc).join('<br>')}</td><td class="n">${w.due ? fr(w.due) : '—'}</td><td>${pill(w)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function renderTry() {
+  $('age-out').textContent = $('age').value + ' ans';
+  const C = SAFE.planifier(RULES, patient(), {today: TODAY});
+  const fired = C.ev.filter(x => x.ev.ok);
+  let h = `<h3>Règles déclenchées (${fired.length} sur ${RULES.length})</h3>` + (fired.length ? `<div class="chips">${fired.map(x => `<span class="chip">${esc(short(x.r))}</span>`).join('')}</div>` : '<p class="empty">Aucune règle ne se déclenche : changez l\'âge, le sexe, le traitement ou l\'HbA1c.</p>');
+  if (C.indicateurs.length) h += '<h3>Alertes de prévention</h3>' + C.indicateurs.map(i => `<div class="alert"><span aria-hidden="true">🔔</span><div><b>${esc(i.libelle)}</b><small>${esc(i.r.libelle)}${i.ordonnance ? ' · ordonnance pré-générée : ' + esc(i.ordonnance.examens.join(', ')) : ''}</small></div></div>`).join('');
+  const bio = C.bio, late = bio.filter(w => w.st === 'late'), later = bio.filter(w => w.st !== 'late');
+  if (late.length) h += `<h3>Biologie à prescrire maintenant (${late.length})</h3>` + table(late);
+  if (later.length) h += '<h3>Biologie à venir</h3>' + table(later);
+  if (C.imagerie.length) h += '<h3>Imagerie</h3>' + table(C.imagerie);
+  if (C.traitement.length) h += '<h3>Traitements à prescrire</h3>' + table(C.traitement);
+  if (C.prev.length) h += '<h3>Vaccins, dépistages et prévention</h3>' + table(C.prev);
+  $('out').innerHTML = h;
+}
+['age', 'sexe', 'drug', 'hba1c', 'diab', 'dtcap'].forEach(id => $(id).addEventListener('input', renderTry));
+
+/* ---- Liste des règles ---- */
+function ruleHTML(r) {
+  const refs = (r.references || []).map(x => x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.libelle)}</a>` : esc(x.libelle));
+  return `<details><summary><b>${esc(r.libelle)}</b><span class="pill p-soon">à valider</span></summary><div class="rule">
+    <p><span class="k">SI</span> ${esc(SAFE.decrireArbre(r.quand))}</p>${r.alors.map(a => `<p><span class="k">ALORS</span> ${esc(sentAct(a))}</p>`).join('')}
+    ${refs.length ? `<p class="meta">Source : ${refs.join(' · ')}</p>` : ''}${(r.points_a_valider || []).map(x => `<div class="todo">À valider : ${esc(x)}</div>`).join('')}</div></details>`;
+}
+const GDESC = {'Règles du document de Fred':'Transcrites du document « Plan de soins », puis migrées au format unique.', 'Cas supplémentaires (sources citées)':'Lues sur des pages officielles ; chaque règle cite sa source.', 'Exemples de la demande initiale':'Les trois exemples donnés à l\'origine (tétanos à 45 ans, diabète, Zyprexa).'};
+$('rules').innerHTML = BIB.map(g => `<div class="group"><h3>${esc(g.nom)} (${g.regles.length})</h3><p class="sub">${esc(GDESC[g.nom] || '')}</p>${g.regles.map(ruleHTML).join('')}</div>`).join('');
+
+renderTry();
+</script>

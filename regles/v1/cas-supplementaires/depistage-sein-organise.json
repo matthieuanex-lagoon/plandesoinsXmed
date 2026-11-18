@@ -1,0 +1,52 @@
+{
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Recommandation officielle lue sur la source citée — non validée cliniquement",
+  "id": "depistage-sein-organise",
+  "libelle": "Dépistage organisé du cancer du sein (50–74 ans)",
+  "evaluer_quand": [
+    "ouverture_dossier",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "sexe",
+        "valeur": "F"
+      },
+      {
+        "type": "age",
+        "op": "entre",
+        "valeur": 50,
+        "valeur2": 74
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "ordonnance",
+      "categorie": "imagerie",
+      "examens": [
+        "Mammographie"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 2,
+        "unite": "ans"
+      }
+    }
+  ],
+  "points_a_valider": [
+    "La source exclut les femmes avec symptômes ou antécédents personnels/familiaux de risque élevé : non représenté (à définir : quels éléments du dossier ?).",
+    "La source associe un examen clinique des seins à la mammographie : non représenté.",
+    "La page Service-Public indique elle-même qu'elle est ancienne : vérifier sur le site de l'Assurance maladie ou de l'INCa."
+  ],
+  "references": [
+    {
+      "libelle": "Service-Public — « Cancer du sein : un mois pour sensibiliser au dépistage » (01/10/2024)",
+      "url": "https://www.service-public.gouv.fr/particuliers/actualites/A15216?lang=fr",
+      "extrait": "À partir de l'âge de 50 ans, et jusqu'à 74 ans … tous les 2 ans … une mammographie"
+    }
+  ]
+}

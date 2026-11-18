@@ -1,0 +1,51 @@
+{
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Recommandation officielle lue sur la source citée — non validée cliniquement",
+  "id": "depistage-col-uterus-25-29",
+  "libelle": "Dépistage du cancer du col de l'utérus (25–29 ans)",
+  "evaluer_quand": [
+    "ouverture_dossier",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "sexe",
+        "valeur": "F"
+      },
+      {
+        "type": "age",
+        "op": "entre",
+        "valeur": 25,
+        "valeur2": 29
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "ordonnance",
+      "categorie": "autre",
+      "examens": [
+        "Examen cytologique (dépistage du col de l'utérus)"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 3,
+        "unite": "ans"
+      }
+    }
+  ],
+  "points_a_valider": [
+    "Rythme de 3 ans valable « après deux premiers tests réalisés à 1 an d'intervalle et dont les résultats sont normaux » : les deux premiers tests ne sont pas représentés.",
+    "Classement de l'examen (biologie / prévention) à confirmer."
+  ],
+  "references": [
+    {
+      "libelle": "HAS — « Dépistage du cancer du col de l'utérus : le test HPV-HR recommandé chez les femmes de plus de 30 ans » (06/07/2020)",
+      "url": "https://www.has-sante.fr/jcms/p_3192618/fr/depistage-du-cancer-du-col-de-l-uterus-le-test-hpv-hr-recommande-chez-les-femmes-de-plus-de-30-ans",
+      "extrait": "le test de dépistage est réalisé par examen cytologique tous les 3 ans"
+    }
+  ]
+}

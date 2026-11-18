@@ -1,0 +1,63 @@
+{
+  "id": "iec-ara2",
+  "libelle": "Patients sous IEC ou ARA2",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Document « Plan de soins » (Fred), transcrit dans regles/iec-ara2.yaml",
+  "evaluer_quand": [
+    "nouvelle_prescription",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "medicament",
+        "atc": [
+          "C09",
+          "C09C"
+        ]
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "ordonnance",
+      "phase": "instauration",
+      "categorie": "biologie",
+      "examens": [
+        "Ionogramme (Na, K)",
+        "Créatinine"
+      ],
+      "frequence": {
+        "mode": "jalons",
+        "jalons": [
+          "S2-4",
+          "M12"
+        ]
+      }
+    },
+    {
+      "action": "ordonnance",
+      "categorie": "biologie",
+      "examens": [
+        "Ionogramme",
+        "Clairance de la créatinine"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 1,
+        "unite": "ans",
+        "max": 2
+      },
+      "phase": "entretien",
+      "cherche": {
+        "Ionogramme": "Sodium",
+        "Clairance de la créatinine": "Créatinine"
+      }
+    }
+  ],
+  "points_a_valider": [
+    "Ligne « Microalbuminurie » : élément à prescrire non renseigné dans le document source."
+  ]
+}

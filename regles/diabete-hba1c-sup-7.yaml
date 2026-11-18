@@ -1,0 +1,18 @@
+id: diabete-hba1c-sup-7
+libelle: Règle diabète HbA1c > 7 %
+source: document_source
+statut_validation: a_valider
+declencheur:
+  type: pathologie
+  criteres: ["HbA1c > 7 %"]   # A VALIDER : dernière valeur ? règle si <= 7 % ?
+entretien:                    # periodicite_corrigee : vide (renseignée par l'utilisateur)
+  - {chercher: Hémoglobine, prescrire: NFS, periodicite: {min: 1, unite: an}}
+  - {chercher: HbA1c, prescrire: HbA1c, periodicite: {min: 3, unite: mois}}
+  - {chercher: Chol total, prescrire: EAL, periodicite: {min: 1, unite: an}}
+  - {chercher: SGOT, prescrire: SGOT, periodicite: {min: 1, unite: an}}
+  - {chercher: SGPT, prescrire: SGPT, periodicite: {min: 1, unite: an}}
+  - {chercher: Gamma GT, prescrire: Gamma GT, periodicite: {min: 1, unite: an}}
+  - {chercher: TP, prescrire: TP, periodicite: {min: 1, unite: an}}
+  - {chercher: Clairance de la créatinine CKD-EPI, prescrire: Clairance de la créatinine, periodicite: {min: 1, unite: an}}
+  - {chercher: RAC, prescrire: RAC, periodicite: {min: 1, unite: an}}
+  - {chercher: ECG dans ES et doc, prescrire: ECG, canal: prevention, periodicite: {min: 1, unite: an}}  # non biologique : A VALIDER

@@ -1,0 +1,41 @@
+{
+  "id": "vaccin-tetanos-45-ans",
+  "libelle": "Vaccin tétanos à 45 ans",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "evaluer_quand": [
+    "ouverture_dossier",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "age",
+        "op": "=",
+        "valeur": 45
+      },
+      {
+        "type": "vaccin",
+        "libelle": "Tétanos",
+        "statut": "non_fait"
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "indicateur_prevention",
+      "libelle": "Vaccination tétanos à prévoir",
+      "niveau": "alerte",
+      "ordonnance": {
+        "categorie": "vaccin",
+        "examens": [
+          "Vaccin tétanos"
+        ],
+        "frequence": {
+          "mode": "une_fois"
+        }
+      }
+    }
+  ]
+}

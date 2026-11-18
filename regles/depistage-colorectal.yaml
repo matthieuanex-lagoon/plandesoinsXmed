@@ -1,0 +1,23 @@
+id: depistage-colorectal
+libelle: Requête — dépistage (recherche de sang dans les selles)
+source: document_source
+statut_validation: a_valider
+declencheur:
+  type: profil
+  criteres:                 # recopiés du document, non vérifiés
+    - age entre 50 et 75 ans
+    - sans épisode de soin (ouvert ou fermé) de polype du côlon, cancer du côlon, sigmoïde ou rectum
+    - sans antécédent familial 1er degré de polype ou de cancer
+    - sans CR de coloscopie de moins de 5 ans
+    - sans élément de suivi de coloscopie de moins de 5 ans
+entretien:
+  - prescrire: Recherche de sang dans les selles
+    canal: prevention       # A VALIDER : figure dans « Prévention » sur les captures XMed
+    periodicite: {min: 2, unite: an}
+points_a_valider:
+  - "Écart avec le programme officiel : sante.fr (18/03/2026) indique « 50 à 74 ans » ; le document indique 50 à 75 ans."
+  - "Le programme officiel exclut les antécédents personnels ou familiaux de « polype, de cancer ou de maladie touchant le côlon ou le rectum » (sans limiter au 1er degré) ; le document limite aux parents du 1er degré et ajoute « CR de coloscopie de moins de 5 ans »."
+references:
+  - libelle: "sante.fr — « Cancer colorectal : pourquoi se faire dépister ? » (18/03/2026)"
+    url: "https://www.sante.fr/node/6706903"
+    extrait: "personnes âgées de 50 à 74 ans … un test tous les 2 ans … test immunologique à réaliser chez soi"

@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Regle de plan de soins v1 (produite par generateur/)",
+  "type": "object",
+  "required": [
+    "id",
+    "libelle",
+    "actif",
+    "evaluer_quand",
+    "quand",
+    "alors"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "libelle": {
+      "type": "string"
+    },
+    "actif": {
+      "type": "boolean"
+    },
+    "statut_validation": {
+      "type": "string",
+      "enum": [
+        "a_valider",
+        "valide"
+      ]
+    },
+    "evaluer_quand": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "ouverture_dossier",
+          "nouvelle_prescription",
+          "integration_resultat",
+          "quotidien"
+        ]
+      }
+    },
+    "quand": {
+      "$ref": "#/$defs/noeud"
+    },
+    "alors": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/ordonnance"
+          },
+          {
+            "$ref": "#/$defs/indicateur"
+          }
+        ]
+      }
+    },
+    "points_a_valider": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "libelle"
+        ],
+        "properties": {
+          "libelle": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "extrait": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "origine": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "noeud": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/groupe"
+        },
+        {
+          "$ref": "#/$defs/condition"
+        }
+      ]
+    },
+    "groupe": {
+      "type": "object",
+      "required": [
+        "op",
+        "conditions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "enum": [
+            "ET",
+            "OU"
+          ]
+        },
+        "non": {
+          "const": true
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/noeud"
+          }
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "age",
+            "sexe",
+            "pathologie",
+            "medicament",
+            "element_suivi",
+            "vaccin",
+            "antecedent_familial",
+            "compte_rendu"
+          ]
+        },
+        "non": {
+          "const": true
+        },
+        "op": {
+          "enum": [
+            "=",
+            ">",
+            ">=",
+            "<",
+            "<=",
+            "entre",
+            "existe",
+            "absent"
+          ]
+        },
+        "valeur": {},
+        "valeur2": {
+          "type": "number"
+        },
+        "libelle": {
+          "type": "string"
+        },
+        "atc": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "statut": {
+          "enum": [
+            "fait",
+            "non_fait"
+          ]
+        },
+        "depuis_mois": {
+          "type": "number"
+        },
+        "premier_degre": {
+          "type": "boolean"
+        }
+      }
+    },
+    "frequence": {
+      "type": "object",
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "une_fois",
+            "tous_les",
+            "jalons"
+          ]
+        },
+        "valeur": {
+          "type": "number"
+        },
+        "unite": {
+          "enum": [
+            "semaines",
+            "mois",
+            "ans"
+          ]
+        },
+        "jalons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(T0|J[0-9]+|M[0-9]+|S[0-9]+(-[0-9]+)?)$"
+          }
+        },
+        "max": {
+          "type": "number"
+        }
+      }
+    },
+    "contenu_ordonnance": {
+      "type": "object",
+      "required": [
+        "categorie",
+        "examens",
+        "frequence"
+      ],
+      "properties": {
+        "categorie": {
+          "enum": [
+            "biologie",
+            "imagerie",
+            "traitement",
+            "vaccin",
+            "consultation",
+            "autre"
+          ]
+        },
+        "examens": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "frequence": {
+          "$ref": "#/$defs/frequence"
+        },
+        "phase": {
+          "enum": [
+            "instauration",
+            "entretien"
+          ]
+        },
+        "cherche": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ordonnance": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/contenu_ordonnance"
+        }
+      ],
+      "required": [
+        "action"
+      ],
+      "properties": {
+        "action": {
+          "const": "ordonnance"
+        }
+      }
+    },
+    "indicateur": {
+      "type": "object",
+      "required": [
+        "action",
+        "libelle",
+        "niveau"
+      ],
+      "properties": {
+        "action": {
+          "const": "indicateur_prevention"
+        },
+        "libelle": {
+          "type": "string"
+        },
+        "niveau": {
+          "enum": [
+            "alerte",
+            "info"
+          ]
+        },
+        "ordonnance": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/contenu_ordonnance"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
