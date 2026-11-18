@@ -16,9 +16,9 @@ prescription biologique.
 | `docs/02-modele-donnees.md` | Modèle de données et algorithme de fusion des règles |
 | `docs/03-maquette.md` | Maquette interactive : mode d'emploi, scénarios, hypothèses |
 | `maquette/maquette-autonome.html` | **La maquette** (un seul fichier, ouvrir dans un navigateur) |
-| `docs/05-convergence-et-cas.md` | Format et moteur uniques, écart avec les sources officielles, cas sourcés |
-| `moteur/moteur.js` | **Moteur unique** (conditions, phases, fusion, échéances) |
-| `tests/moteur.test.js` | Tests du moteur (`node tests/moteur.test.js`) |
+| `docs/05-convergence-et-cas.md` | Format unique et Protase, écart avec les sources officielles, cas sourcés |
+| `protase/protase.js` | **Protase**, le moteur de règles (conditions, phases, fusion, échéances) |
+| `tests/protase.test.js` | Tests de Protase (`node tests/protase.test.js`) |
 | `generateur/index.html` | **Générateur de règles** (conditions ET/OU/NON → ordonnances, indicateurs de prévention) |
 | `docs/04-generateur.md` | Générateur : mode d'emploi, modèle, questions ouvertes |
 | `docs/xmed/` | Captures d'écran XMed de référence (dépôt privé) |
@@ -26,6 +26,10 @@ prescription biologique.
 | `regles/schema.json` | Format d'une règle (JSON Schema) |
 | `regles/schema-v1.json`, `regles/v1/` | Format de règle unique ; `document-fred/`, `cas-supplementaires/` (sourcés), `exemples-generateur/` |
 | `regles/*.yaml` | Les 4 exemples du document, transcrits tels quels |
+
+## Nom du moteur : Protase
+
+**Protase** désigne le moteur qui lit les règles « si… alors » et produit ordonnances, alertes et échéances. En grammaire, la *protase* est la proposition conditionnelle (le « si ») d'une phrase ; l'*apodose* est la conséquence (le « alors »).
 
 ## Principe de prudence
 

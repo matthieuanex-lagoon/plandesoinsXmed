@@ -45,7 +45,7 @@ label.b{display:block;font-size:12px;color:var(--mut)}
 <datalist id="dl-med"><option value="Zyprexa"><option value="Lamotrigine"><option value="Simvastatine"></datalist>
 <datalist id="dl-suivi"><option value="HbA1c"><option value="Hémoglobine"><option value="Cholestérol LDL"><option value="Cholestérol total"><option value="Glycémie"><option value="Créatinine"></datalist>
 <datalist id="dl-vac"><option value="Tétanos"><option value="DTCP"><option value="Pneumocoque"></datalist>
-<script src="../moteur/moteur.js"></script>
+<script src="../protase/protase.js"></script>
 <script src="bibliotheque-data.js"></script>
 <script>
 /* ===== Outils ===== */
@@ -133,17 +133,17 @@ function actHTML(a,i){
  <select onchange="setA(${i},'niveau',this.value)"><option value="alerte" ${a.niveau==='alerte'?'selected':''}>Alerte</option><option value="info" ${a.niveau==='info'?'selected':''}>Information</option></select></div>
  <label><input type="checkbox" ${a.ordonnance?'checked':''} onchange="togglePre(${i},this.checked)"> Pré-générer une ordonnance associée</label>${a.ordonnance?`<div style="margin-left:18px">${ordHTML(i,a.ordonnance)}</div>`:''}</div>`}
 
-/* ===== Lecture en français (moteur partagé) ===== */
-const sentTree=Moteur.decrireArbre;
+/* ===== Lecture en français (Protase) ===== */
+const sentTree=Protase.decrireArbre;
 const UNI1={semaines:'toutes les semaines',mois:'tous les mois',ans:'tous les ans'};
 const freq=f=>f.mode==='une_fois'?'une seule fois':f.mode==='tous_les'?(+f.valeur===1&&!f.max?UNI1[f.unite]:`tous les ${f.valeur}${f.max?' à '+f.max:''} ${f.unite}`):`aux jalons ${(f.jalons||[]).join(', ')}`;
 const PH={instauration:' (à l\'instauration)',entretien:' (après 1 an de traitement)'};
 const sentOrd=o=>`ordonnance de ${CATS[o.categorie].toLowerCase()}${PH[o.phase]||''} : ${o.examens.join(', ')||'(vide)'} — ${freq(o.frequence)}`;
 function sentAct(a){return a.action==='ordonnance'?'Générer une '+sentOrd(a):`Afficher ${a.niveau==='alerte'?'l\'alerte':'l\'information'} de prévention « ${a.libelle||'…'} »`+(a.ordonnance?` et pré-générer une ${sentOrd(a.ordonnance)}`:'')}
 
-/* ===== Banc d'essai : patient fictif -> moteur partagé ===== */
+/* ===== Banc d'essai : patient fictif -> Protase ===== */
 const csv=s=>String(s||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean);
-function patient(){const t=TEST;return{naissance:Moteur.addMonths(t.today,-12*(+t.age||0)),sexe:t.sexe,episodes:csv(t.pathologies).map(l=>({d:'',l})),
+function patient(){const t=TEST;return{naissance:Protase.addMonths(t.today,-12*(+t.age||0)),sexe:t.sexe,episodes:csv(t.pathologies).map(l=>({d:'',l})),
  traitements:t.meds.filter(m=>m.label||m.atc).map(m=>({label:m.label||m.atc,atc:m.atc||null,debut:m.debut||t.today})),vaccins:csv(t.vaccins).map(l=>({libelle:l})),
  atcdFam:csv(t.atcd).map(x=>{const[l,lien]=x.split(':');return{l:l.trim(),lien:(lien||'').trim()}}),documents:csv(t.documents).map(x=>{const[l,d]=x.split('@');return{libelle:l.trim(),date:(d||'').trim()}}),
  suivi:t.suivi.filter(x=>x.libelle).map(x=>({date:x.date,lib:x.libelle,val:x.valeur,unit:''}))}}
@@ -153,7 +153,7 @@ const ST={late:['En retard','#c8281c'],soon:['Bientôt','#d98a00'],ok:['À jour'
 function tab(rows){return rows.length?`<table><tr><th>Élément</th><th>Règles</th><th>Périodicité</th><th>Dernier résultat</th><th>Échéance</th><th>Statut</th></tr>${rows.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${[...new Set(w.srcs.map(s=>s.r.libelle))].map(x=>`<span class="m">${esc(x)}</span>`).join('<br>')}</td>
  <td>${[w.jal.length?'jalons '+w.jal.join(', '):'',w.days?'tous les '+fmtPer(w.days):''].filter(Boolean).join('<br>')||'une fois'}</td><td>${w.last?fr(w.last.date)+' — '+esc(w.last.val):'<span class="m">aucun</span>'}</td><td>${w.due?fr(w.due):'—'}</td>
  <td><span class="pill" style="background:${ST[w.st][1]}">${w.st==='late'&&w.never?'Jamais fait':ST[w.st][0]}</span></td></tr>`).join('')}</table>`:'<div class="m">—</div>'}
-function testHTML(){const C=Moteur.planifier(RULES,patient(),{today:TEST.today});
+function testHTML(){const C=Protase.planifier(RULES,patient(),{today:TEST.today});
  const regles=C.ev.map(({r,ev})=>`<details><summary><span class="pill ${ev.ok?'p-ok':'p-no'}">${ev.inactive?'Désactivée':ev.ok?'Déclenchée':'Non déclenchée'}</span> <b>${esc(r.libelle)}</b></summary>${ev.inactive?'':`<ul class="tr">${trHTML(ev)}</ul>`}</details>`).join('');
  const ind=C.indicateurs.map(i=>`<div class="act">${i.niveau==='alerte'?'🔔 <b>Alerte</b>':'ℹ <b>Information</b>'} : ${esc(i.libelle)} <span class="m">— ${esc(i.r.libelle)}</span>${i.ordonnance?`<br><span class="m">pré-génère une ${esc(sentOrd(i.ordonnance))}</span>`:''}</div>`).join('')||'<div class="m">Aucun indicateur.</div>';
  return`<h4>Règles évaluées</h4>${regles}<h4>Indicateurs de prévention</h4>${ind}<h4>Plan fusionné — biologie (période la plus courte entre règles)</h4>${tab(C.bio)}<h4>Plan fusionné — non biologique (prévention)</h4>${tab(C.prev)}`}
@@ -170,7 +170,7 @@ function renderEditor(){const r=R();
  <div class="row"><button onclick="addAct('ordonnance')">+ Ordonnance (biologie, imagerie…)</button><button onclick="addAct('indicateur_prevention')">+ Indicateur de prévention</button></div></div></div>
  <div class="box"><h3 class="h-n">Lecture de la règle</h3><div class="in"><div class="sentence" id="sent"></div></div></div>
  <div class="box"><h3 class="h-test">Banc d'essai — patient fictif</h3><div class="in" id="testform"></div><div class="in" id="testout"></div></div>
- <div class="box"><h3 class="h-n">Règle générée (JSON) — c'est ce que le moteur de XMed lirait</h3><div class="in"><textarea id="json" rows="14" readonly></textarea>
+ <div class="box"><h3 class="h-n">Règle générée (JSON) — c'est ce que Protase (le moteur) lirait</h3><div class="in"><textarea id="json" rows="14" readonly></textarea>
  <div class="row"><button onclick="copyJson()">Copier</button><button onclick="exportOne()">Télécharger cette règle</button></div></div></div>`;
  renderTestForm();refresh()}
 function renderTestForm(){const t=TEST;document.getElementById('testform').innerHTML=`<div class="grid2">
