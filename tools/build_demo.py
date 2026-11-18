@@ -14,14 +14,9 @@ def patch(h, pairs):
         assert h.count(a) == 1, (h.count(a), a[:70]); h = h.replace(a, b)
     return h
 back = '<a href="index.html" style="color:var(--blu);text-decoration:none;font-weight:600">← Démo SAFE</a> '
-# Maquette : lien retour + scénarios par ancre (#plan, #lamotrigine, #lithium, #hprim, #regles)
+# Maquette : lien retour (les ancres #biologie, #lamotrigine, #lithium, #suivi, #prevention, #hprim, #regles sont gérées par la page)
 m = open("maquette/maquette-autonome.html").read()
-m = patch(m, [('<div class="top"><b>XMed — Plan de soins</b>', '<div class="top">' + back + '<b>XMed — Plan de soins</b>'),
- ("render();\n</script>", """(function(){const h=(location.hash||'').slice(1);
- if(h==='lamotrigine'||h==='lithium'){if(h==='lithium'){S.sexe='F';S.naissance='1974-06-01'}instaurer(h==='lithium'?3:0);S.tab='plan'}
- else if(['plan','presc','hprim','regles'].includes(h))S.tab=h})();
-render();
-</script>""")])
+m = patch(m, [("<!--BACK-->", '<a href="index.html" style="color:var(--blu);text-decoration:none;font-weight:600">← Démo SAFE</a>')])
 open("demo/artifact/maquette.html", "w").write(m)
 # Générateur : lien retour, ancres (#lithium, #diabete, #tetanos, #sein), export = copie dans le presse-papiers (les téléchargements sont bloqués dans l'artefact)
 g = open("generateur/generateur-autonome.html").read()

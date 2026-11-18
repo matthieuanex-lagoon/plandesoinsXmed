@@ -1,44 +1,35 @@
-# Maquette fonctionnelle
+# Maquette fonctionnelle (style XMed)
 
 `maquette/maquette-autonome.html` (un seul fichier, à ouvrir dans un navigateur) ou `maquette/index.html`.
-Patient **fictif** reprenant les données visibles sur vos captures (DOE John). Rien n'est branché sur XMed.
+Patient **fictif** reprenant les données visibles sur les captures de `docs/xmed/`. Rien n'est branché sur XMed.
+La maquette utilise le **moteur SAFE** (`safe/safe.js`) et les règles de `regles/v1/` ; après modification d'une règle : `python3 tools/build.py`.
 
-Les règles viennent de `regles/v1/` (voir `05-convergence-et-cas.md`) ; la maquette utilise **SAFE** (le moteur partagé), `safe/safe.js`. Après modification d'une règle : `python3 tools/build.py`
-(valide contre le schéma, régénère les données et les fichiers autonomes).
+## Ce qui ressemble à XMed
 
-## Ce que la maquette fait réellement
+- **Dossier patient** avec la disposition des cadres des captures (Identité, Antécédents familiaux, Prévention, Épisodes fermés / en cours, Éléments de suivi, Allergies, Facteurs de risque, Traitements, Contacts). Les lignes se sélectionnent, chaque cadre peut être agrandi (⛶).
+- **Fenêtres** déplaçables, agrandissables, qui s'empilent : *Nouvelle ordonnance*, *Prescription d'examens biologiques*, *Éléments de suivi*, *Prévention*, *Liste des documents reçus (HPRIM)*, *Règles du plan de soins*. Menus et barre d'outils : « Actions » ouvre chacune d'elles.
+- Barre orange **Simulateur** (hors XMed) : date du jour, sexe, naissance, règle de choix de la périodicité, réinitialisation.
 
-Un vrai moteur (JS) évalue les règles sur le patient, fusionne les éléments (période la plus courte), lit les
-derniers résultats **dans les éléments de suivi**, calcule les échéances. Barre orange « Simulateur » :
-date du jour, date de naissance (âge → règle de dépistage), instauration d'un médicament, réglage « périodicité patient ».
+## Ce que SAFE ajoute, et où
 
-| Écran | Fonctionnalité de la spec |
+| Où | Ce qui change |
 |---|---|
-| Dossier patient | Bandeau « n prescriptions bio en attente » (F3) ; ligne de traitement colorée + règle associée (F2) ; éléments non bio dans Prévention |
-| Plan de soins | Tableau fusionné : règles à l'origine, périodicité retenue, dernier résultat, échéance, statut ; évaluation détaillée de chaque critère de règle |
-| Prescription biologique | Propositions pour l'année à venir, à jour des délais, pré-cochées si en retard ; ajout manuel (F4) |
-| Intégration HPRIM | « Prochain » proposé automatiquement, modifiable ; l'écart devient périodicité propre au patient (F1) |
-| Règles | Périodicité livrée / corrigée, « Restaurer » = droit au remords (F5) |
+| Cadre **Prévention** (dossier) | À droite de la chronologie, un bloc « Plan de soins (SAFE) » : alertes, nombre d'examens à prescrire, boutons d'ouverture |
+| **Nouvelle ordonnance** | Ajouter un médicament, valider : si une règle existe, un message l'indique et propose d'ouvrir la prescription biologique ; la ligne du traitement est colorée dans le dossier |
+| **Prescription d'examens biologiques** | Lignes pré-remplies par le plan (colonne « Plan de soins » : en retard / jamais fait / à venir, règles à l'origine) ; cocher, ajouter un examen libre, supprimer, monter / descendre, lier des épisodes, aperçu, OK |
+| **Éléments de suivi** | Le « Prochain » est proposé d'après le plan ; une autre date devient la périodicité propre à ce patient |
+| **Prévention** | Vaccins, examens et consultations, chronologie ; « Proposé / Refusé », « Fait » |
+| **HPRIM** | Prochain proposé avant incorporation, modifiable |
+| **Règles** | Périodicité livrée / corrigée, retour à la règle d'origine, pourquoi une règle est active ou non |
 
-## Scénarios à essayer
+## Scénarios (ancres d'adresse)
 
-1. **Instaurer la lamotrigine** → toast d'information, ligne colorée, éléments T0/M6/M12 ajoutés, fusion avec la règle diabète (ex. NFS, EAL).
-2. **Mettre une naissance en 1970** → la règle de dépistage se déclenche (critères détaillés dans « Plan de soins »).
-3. **Intégration HPRIM** avec HbA1c = 6,8 % → la règle diabète s'éteint (question ouverte n°11).
-4. **Règles** : corriger une périodicité (« 6 mois »), voir la case orange dans le plan, puis restaurer.
-5. **Avancer la date du jour d'un an** après une instauration → bascule vers les règles « après 1 an ».
-
-## Ce que les captures m'ont appris (à confirmer)
-
-- **Éléments de suivi** : le champ **« Prochain »** (date) existe déjà → c'est là que la périodicité proposée doit s'écrire. Il y a aussi normes basse/haute et cibles.
-- **Prévention** : `Répétition` (« tous les 2 ans pendant 10 ans »), `Proposition` (non proposé / proposé / refusé), statut, chronologie. Le plan de soins non biologique doit probablement **alimenter cet écran**, pas en créer un second.
-- **HPRIM** : correspondance « Libellé labo » → « Libellé XMed » déjà faite : c'est le bon point d'accroche pour F1.
-- « Test au monofilament : prochain saisi dans les éléments de suivi » — un précédent du fonctionnement voulu.
+`#biologie` (prescription pré-remplie), `#lamotrigine` et `#lithium` (ordonnance prête : modifier la posologie puis OK), `#suivi`, `#prevention`, `#hprim`, `#regles`.
 
 ## Hypothèses de la maquette (non vérifiées)
 
-- Correspondance *élément cherché ↔ élément à prescrire* déduite des tableaux du document ; les libellés sont rapprochés par nom (pas de codes).
-- Intervalle « 1 à 2 ans » → borne basse. « Créatinine » (IEC/ARA2) et « Créatinine / Clairance » (lamotrigine) restent des lignes distinctes.
-- ECG et recherche de sang dans les selles classés « prévention ».
-- Les deux médicaments « ATC C09 / C09C » du simulateur sont des exemples génériques de maquette, pas des molécules précises.
-- Pas de « changement de posologie » simulé, seulement l'instauration.
+- Correspondance *élément cherché ↔ élément à prescrire* déduite des règles, rapprochée par le nom (pas par des codes).
+- Intervalle « 1 à 2 ans » → borne basse. ECG et recherche de sang dans les selles classés « prévention ».
+- Seuls quelques médicaments sont proposables (ceux des règles) ; les deux « ATC C09 / C09C » sont des exemples génériques.
+- Les écrans sont des approximations des captures : les colonnes ou boutons non utiles à la démonstration sont grisés ou absents.
+- Le « changement de posologie » n'est pas simulé.
