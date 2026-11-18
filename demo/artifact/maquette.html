@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Plan de soins XMed</title>
+<style>
+:root{--bg:#e9edf2;--panel:#fff;--bd:#b9c3cf;--txt:#1d2733;--mut:#5d6b7a;--cy:#bdeeff;--lav:#d9d6ff;--sal:#ffd9d4;--sage:#d6ead9;--ora:#ffe7c2;
+--red:#c8281c;--grn:#1c7c3c;--blu:#1b5fa8;--sel:#cfe3f6}
+@media (prefers-color-scheme:dark){:root{--bg:#161b22;--panel:#1f2630;--bd:#3a4553;--txt:#e4e9ef;--mut:#9aa7b6;--cy:#1c4a5a;--lav:#2d2c55;--sal:#5a2a26;--sage:#27472f;--ora:#5a4420;--red:#ff7b6e;--grn:#5fd184;--blu:#7ab6f5;--sel:#27425e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.35 "Segoe UI",system-ui,sans-serif}
+.top{background:var(--panel);border-bottom:1px solid var(--bd);padding:6px 12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.top b{font-size:14px}.tag{background:var(--ora);padding:2px 8px;border-radius:10px;font-size:11px}
+.sim{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:6px 12px;background:var(--ora);border-bottom:1px solid var(--bd);font-size:12px}
+.sim label{display:flex;gap:4px;align-items:center}
+.tabs{display:flex;gap:2px;padding:6px 12px 0;flex-wrap:wrap}
+.tab{padding:6px 12px;border:1px solid var(--bd);border-bottom:none;background:var(--bg);cursor:pointer;border-radius:6px 6px 0 0;color:var(--mut)}
+.tab.on{background:var(--panel);color:var(--txt);font-weight:600}
+.badge{display:inline-block;min-width:18px;text-align:center;background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
+main{background:var(--panel);margin:0 12px 12px;border:1px solid var(--bd);padding:12px;min-height:60vh}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:10px}
+.pn{border:1px solid var(--bd);background:var(--panel)}.pn h4{margin:0;padding:4px 8px;font-size:12px}
+.h-cy{background:var(--cy)}.h-lav{background:var(--lav)}.h-sal{background:var(--sal)}.h-sage{background:var(--sage)}
+table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid var(--bd);padding:3px 6px;text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--mut);font-size:12px;background:var(--bg)}
+.r{color:var(--red)}.g{color:var(--grn)}.m{color:var(--mut)}.num{text-align:right;white-space:nowrap}
+.pill{border-radius:3px;padding:1px 6px;font-size:11px;color:#fff;white-space:nowrap}
+.late{background:var(--red)}.soon{background:#d98a00}.ok{background:var(--grn)}.presc{background:var(--blu)}.na{background:#7a8794}
+.src{display:inline-block;background:var(--lav);border-radius:3px;padding:0 5px;margin:1px;font-size:11px}
+.src.mod{outline:2px solid #d98a00}
+button{font:inherit;padding:4px 10px;border:1px solid var(--bd);background:var(--bg);color:var(--txt);cursor:pointer;border-radius:3px}
+button.pri{background:var(--blu);color:#fff;border-color:var(--blu)}button:disabled{opacity:.5;cursor:default}
+input,select{font:inherit;padding:2px 4px;border:1px solid var(--bd);background:var(--panel);color:var(--txt)}
+.note{background:var(--bg);border-left:3px solid #d98a00;padding:6px 10px;margin:8px 0;font-size:12px}
+.q{border-left-color:var(--blu)}
+.toast{background:var(--sage);border:1px solid var(--grn);padding:8px 12px;margin-bottom:10px}
+.alert{background:var(--sal);border:1px solid var(--red);padding:8px 12px;margin-bottom:10px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.rowhl{background:var(--ora)}
+h3{margin:14px 0 6px}h3:first-child{margin-top:0}
+.rule{border:1px solid var(--bd);margin-bottom:12px}.rule>header{padding:6px 10px;background:var(--lav);display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.crit li{margin:1px 0}.crit .no{color:var(--red)}.crit .yes{color:var(--grn)}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="top"><a href="index.html" style="color:var(--blu);text-decoration:none;font-weight:600">← Démo Protase</a> <b>XMed — Plan de soins</b><span class="tag">MAQUETTE · données fictives · règles non validées cliniquement</span>
+<span class="m">Patient : <b>DOE John</b> (fictif, d'après captures)</span></div>
+<div class="sim" id="sim"></div>
+<div class="tabs" id="tabs"></div>
+<main id="main"></main>
+<script>
+/* Protase — moteur de règles du plan de soins, partagé par generateur/, maquette/ et tests/.
+ * Lit des règles v1 (regles/schema-v1.json) et un patient, produit : évaluation des règles,
+ * indicateurs de prévention, plan fusionné (période la plus courte), échéances.
+ *
+ * Patient : {naissance:'AAAA-MM-JJ', sexe:'F'|'M'|'', episodes:[{d,l}], atcdFam:[{l,lien}],
+ *            traitements:[{label,atc,debut}], suivi:[{date,lib,val,unit}], vaccins:[{libelle,date?}],
+ *            documents:[{libelle,date}]}
+ * Contexte : {today, overrides:{'<regle>|<action>|<examen>':jours}, patientPer:{'<cle>':jours},
+ *            policy:'min'|'patient', prescrit:{'<cle>':date}}
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.Protase = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  const UNIT = { semaines: 7, mois: 30.4375, ans: 365.25 };
+  const addDays = (s, n) => new Date(new Date(s + 'T00:00:00Z').getTime() + Math.round(n) * 864e5).toISOString().slice(0, 10);
+  const addMonths = (s, m) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() + m); return d.toISOString().slice(0, 10); };
+  const diffDays = (a, b) => Math.round((new Date(b) - new Date(a)) / 864e5);
+  const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/cholesterol/g, 'chol').replace(/\s+/g, ' ').trim();
+  const nk = s => norm(String(s).replace(/\(.*?\)/g, ''));
+  const SYM = { '>=': '≥', '<=': '≤' };
+
+  function age(P, today) {
+    const t = new Date(today), b = new Date(P.naissance);
+    let a = t.getUTCFullYear() - b.getUTCFullYear();
+    if (t.getUTCMonth() < b.getUTCMonth() || (t.getUTCMonth() === b.getUTCMonth() && t.getUTCDate() < b.getUTCDate())) a--;
+    return a;
+  }
+  const has = (list, l) => !!l && list.some(x => norm(x).includes(norm(l)));
+  const sameLabel = (a, b) => { const m = norm(a), n = norm(b); return m === n || m.startsWith(n) || n.startsWith(m); };
+  function lastOf(P, labels, today, mois) {
+    const lim = mois ? addMonths(today, -mois) : '0000-00-00';
+    return P.suivi.filter(x => labels.some(l => sameLabel(x.lib, l)) && x.date <= today && x.date >= lim)
+      .sort((a, b) => b.date.localeCompare(a.date))[0];
+  }
+  const atcList = n => (Array.isArray(n.atc) ? n.atc : n.atc ? [n.atc] : []);
+  const medMatch = (n, t) => (n.libelle && norm(t.label).includes(norm(n.libelle))) || (t.atc && atcList(n).some(a => t.atc.startsWith(a)));
+  // « Lien » est du texte libre dans XMed : hypothèse à remplacer par un degré de parenté structuré.
+  const PREMIER_DEGRE_OUI = /\b(pere|mere|frere|soeur|enfant|fils|fille|parents?)\b/, PREMIER_DEGRE_NON = /grand|oncle|tante|cousin|neveu|niece|demi/;
+  const estPremierDegre = lien => { const n = norm(lien); return !PREMIER_DEGRE_NON.test(n) && PREMIER_DEGRE_OUI.test(n); };
+
+  /* ---- Lecture en français d'une condition ---- */
+  function decrireCondition(n) {
+    const v = x => x ?? '?'; let s = '';
+    if (n.type === 'age') s = n.op === 'entre' ? `l'âge est entre ${v(n.valeur)} et ${v(n.valeur2)} ans` : `l'âge ${SYM[n.op] || n.op} ${v(n.valeur)} ans`;
+    if (n.type === 'sexe') s = `sexe ${n.valeur === 'F' ? 'féminin' : 'masculin'}`;
+    if (n.type === 'pathologie') s = `épisode « ${n.libelle || '…'} » présent (ouvert ou fermé)`;
+    if (n.type === 'medicament') { const a = atcList(n); s = n.libelle ? `traitement par « ${n.libelle} »` + (a.length ? ` (ATC ${a.join(' / ')})` : '') : a.length ? `traitement de classe ATC ${a.join(' / ')}` : 'traitement par « … »'; }
+    if (n.type === 'vaccin') s = `vaccin « ${n.libelle || '…'} » ${n.statut === 'fait' ? 'fait' : 'non fait'}`;
+    if (n.type === 'antecedent_familial') s = `antécédent familial « ${n.libelle || '…'} »${n.premier_degre ? ' (1ᵉʳ degré)' : ''}`;
+    if (n.type === 'compte_rendu') s = `compte rendu « ${n.libelle || '…'} »${n.depuis_mois ? ` de moins de ${n.depuis_mois} mois` : ''}`;
+    if (n.type === 'element_suivi') {
+      const w = n.depuis_mois ? ` sur les ${n.depuis_mois} derniers mois` : '';
+      s = n.op === 'existe' ? `« ${n.libelle || '…'} » a un résultat${w}` : n.op === 'absent' ? `« ${n.libelle || '…'} » sans résultat${w}`
+        : `dernière valeur de « ${n.libelle || '…'} » ${SYM[n.op] || n.op} ${v(n.valeur)}${w}`;
+    }
+    return n.non ? `NON (${s})` : s;
+  }
+  function decrireArbre(n) {
+    if (!n.conditions) return decrireCondition(n);
+    const k = n.conditions.map(decrireArbre);
+    const s = k.length ? (k.length > 1 ? '(' + k.join(` ${n.op} `) + ')' : k[0]) : '(aucune condition)';
+    return n.non ? `NON ${s}` : s;
+  }
+
+  /* ---- Évaluation des conditions ---- */
+  function evalCondition(n, P, today) {
+    let ok = false;
+    if (n.type === 'age') { const a = age(P, today); ok = n.op === '=' ? a === +n.valeur : n.op === '>=' ? a >= n.valeur : n.op === '<=' ? a <= n.valeur : n.op === '>' ? a > n.valeur : n.op === '<' ? a < n.valeur : (a >= n.valeur && a <= n.valeur2); }
+    else if (n.type === 'sexe') ok = P.sexe === n.valeur;
+    else if (n.type === 'pathologie') ok = has(P.episodes.map(e => e.l), n.libelle);
+    else if (n.type === 'medicament') ok = P.traitements.some(t => medMatch(n, t));
+    else if (n.type === 'vaccin') { const f = (P.vaccins || []).some(x => norm(x.libelle).includes(norm(n.libelle))); ok = n.statut === 'fait' ? f : !f; }
+    else if (n.type === 'antecedent_familial') ok = (P.atcdFam || []).some(x => norm(x.l).includes(norm(n.libelle)) && (!n.premier_degre || estPremierDegre(x.lien)));
+    else if (n.type === 'compte_rendu') { const lim = n.depuis_mois ? addMonths(today, -n.depuis_mois) : '0000'; ok = (P.documents || []).some(d => norm(d.libelle).includes(norm(n.libelle)) && d.date >= lim && d.date <= today); }
+    else if (n.type === 'element_suivi') {
+      const l = lastOf(P, [n.libelle || ''], today, n.depuis_mois);
+      if (n.op === 'existe') ok = !!l; else if (n.op === 'absent') ok = !l;
+      else if (l) { const x = +l.val, y = +n.valeur; ok = n.op === '>' ? x > y : n.op === '>=' ? x >= y : n.op === '<' ? x < y : n.op === '<=' ? x <= y : x === y; }
+    }
+    return n.non ? !ok : ok;
+  }
+  function evalArbre(n, P, today) {
+    if (!n.conditions) return { ok: evalCondition(n, P, today), t: decrireCondition(n) };
+    const k = n.conditions.map(c => evalArbre(c, P, today));
+    let ok = k.length ? (n.op === 'ET' ? k.every(x => x.ok) : k.some(x => x.ok)) : false;
+    if (n.non) ok = !ok;
+    return { ok, t: `${n.non ? 'NON ' : ''}${n.op}${k.length ? '' : ' (vide)'}`, k };
+  }
+  /* traitement déclencheur : premier traitement du patient correspondant à une condition « médicament » positive de la règle */
+  function traitementDeclencheur(n, P) {
+    const feuilles = []; (function walk(x, neg) { if (x.conditions) x.conditions.forEach(c => walk(c, neg !== !!x.non)); else if (x.type === 'medicament' && !(neg !== !!x.non)) feuilles.push(x); })(n, false);
+    for (const f of feuilles) { const t = P.traitements.find(t => medMatch(f, t)); if (t) return t; }
+    return null;
+  }
+
+  /* ---- Fréquences ---- */
+  const jalonJours = j => j === 'T0' ? 0 : j[0] === 'M' ? Math.round(+j.slice(1) * 30.4375) : +j.slice(1).split('-')[0] * 7; // Sn ou Sn-m : semaines, borne basse
+  const frequenceJours = f => Math.round(f.valeur * UNIT[f.unite]);
+
+  /* ---- Correspondances « élément cherché » ↔ « élément à prescrire » ---- */
+  function correspondances(rules) {
+    const presc2ch = {}, ch2presc = [];
+    rules.forEach(r => (r.alors || []).forEach(a => { const o = a.action === 'ordonnance' ? a : a.ordonnance; if (!o || !o.cherche) return;
+      Object.entries(o.cherche).forEach(([ex, ch]) => { (presc2ch[nk(ex)] ??= []).push(ch); ch2presc.push([ch, ex]); }); }));
+    return { presc2ch, ch2presc };
+  }
+  function cleDepuisLibelle(label, rules) {
+    const n = norm(label), f = correspondances(rules).ch2presc.find(([c]) => sameLabel(c, label) || n === norm(c));
+    return f ? nk(f[1]) : nk(label);
+  }
+
+  /* ---- Plan de soins fusionné ---- */
+  function planifier(rules, P, ctx) {
+    const today = ctx.today, overrides = ctx.overrides || {}, patientPer = ctx.patientPer || {}, prescrit = ctx.prescrit || {};
+    const { presc2ch } = correspondances(rules);
+    const ev = [], indicateurs = [], map = {};
+    const ensure = (lab, canal) => map[nk(lab)] ??= { key: nk(lab), label: lab, canal, srcs: [] };
+    for (const r of rules) {
+      if (r.actif === false) { ev.push({ r, ev: { ok: false, inactive: true, t: 'règle désactivée' } }); continue; }
+      const e = evalArbre(r.quand, P, today), treat = traitementDeclencheur(r.quand, P);
+      e.treat = treat; ev.push({ r, ev: e }); if (!e.ok) continue;
+      const inst = !!treat && today < addDays(treat.debut, 365.25), start = treat ? treat.debut : today;
+      (r.alors || []).forEach((a, ai) => {
+        if (a.action === 'indicateur_prevention') indicateurs.push({ r, libelle: a.libelle, niveau: a.niveau, ordonnance: a.ordonnance || null });
+        const o = a.action === 'ordonnance' ? a : a.ordonnance; if (!o) return;
+        if (o.phase === 'instauration' && !inst) return;
+        if (o.phase === 'entretien' && inst) return;
+        const canal = o.categorie === 'biologie' ? 'biologie' : 'prevention', f = o.frequence;
+        o.examens.forEach(ex => {
+          const w = ensure(ex, canal), ch = o.cherche && o.cherche[ex];
+          if (f.mode === 'tous_les') { const k = `${r.id}|${ai}|${nk(ex)}`, livre = frequenceJours(f), ov = overrides[k];
+            w.srcs.push({ r, phase: o.phase === 'instauration' ? 'instauration' : 'entretien', days: ov ?? livre, livre, mod: ov != null, ch, ovKey: k }); }
+          else if (f.mode === 'jalons') w.srcs.push({ r, phase: 'instauration', jal: f.jalons, start, ch });
+          else w.srcs.push({ r, phase: 'entretien', once: true, ch });
+        });
+      });
+    }
+    const rows = Object.values(map);
+    for (const w of rows) {
+      const labels = [...new Set([...w.srcs.map(s => s.ch).filter(Boolean), ...(presc2ch[w.key] || []), w.label])];
+      w.last = lastOf(P, labels, today);
+      const per = w.srcs.filter(s => s.days).map(s => s.days), pat = patientPer[w.key]; w.pat = pat;
+      let pd = per.slice(); if (pat != null) pd = ctx.policy === 'patient' ? [pat] : [...pd, pat];
+      const c = []; w.never = false; w.jal = []; w.planDone = false;
+      if (pd.length) { w.days = Math.min(...pd); if (w.last) c.push(addDays(w.last.date, w.days)); else { c.push(today); w.never = true; } }
+      for (const s of w.srcs.filter(s => s.jal)) {
+        const ds = s.jal.map(j => addDays(s.start, jalonJours(j)));
+        w.jal.push(...s.jal.map((j, i) => j + ' (' + ds[i].split('-').reverse().join('/') + ')'));
+        const nx = ds.find(d => !w.last || w.last.date < addDays(d, -30));
+        if (nx) { c.push(nx); if (!w.last) w.never = true; } else w.planDone = true;
+      }
+      if (w.srcs.some(s => s.once)) { if (!w.last) { c.push(today); w.never = true; } else w.planDone = true; }
+      w.due = c.length ? c.sort()[0] : null;
+      const pr = prescrit[w.key]; w.prescrit = pr && (!w.last || w.last.date < pr) ? pr : null;
+      w.st = !w.due ? 'na' : w.prescrit ? 'presc' : w.due <= today ? 'late' : w.due <= addDays(today, 30) ? 'soon' : 'ok';
+    }
+    rows.sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
+    return { ev, rows, bio: rows.filter(x => x.canal === 'biologie'), prev: rows.filter(x => x.canal === 'prevention'), indicateurs };
+  }
+  return { planifier, evalArbre, evalCondition, decrireArbre, decrireCondition, cleDepuisLibelle, correspondances,
+    traitementDeclencheur, age, norm, nk, addDays, addMonths, diffDays, frequenceJours, jalonJours, UNIT };
+});
+</script>
+<script>
+// GENERE par tools/build.py — ne pas éditer
+window.REGLES = [
+ {
+  "id": "depistage-colorectal",
+  "libelle": "Requête — dépistage (recherche de sang dans les selles)",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Document « Plan de soins » (Fred), transcrit dans regles/depistage-colorectal.yaml",
+  "evaluer_quand": [
+   "ouverture_dossier",
+   "integration_resultat",
+   "quotidien"
+  ],
+  "quand": {
+   "op": "ET",
+   "conditions": [
+    {
+     "type": "age",
+     "op": "entre",
+     "valeur": 50,
+     "valeur2": 75
+    },
+    {
+     "op": "ET",
+     "non": true,
+     "conditions": [
+      {
+       "op": "OU",
+       "conditions": [
+        {
+         "type": "pathologie",
+         "libelle": "polype du côlon"
+        },
+        {
+         "type": "pathologie",
+         "libelle": "cancer du côlon"
+        },
+        {
+         "type": "pathologie",
+         "libelle": "cancer du sigmoïde"
+        },
+        {
+         "type": "pathologie",
+         "libelle": "cancer du rectum"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "op": "ET",
+     "non": true,
+     "conditions": [
+      {
+       "op": "OU",
+       "conditions": [
+        {
+         "type": "antecedent_familial",
+         "libelle": "polype",
+         "premier_degre": true
+        },
+        {
+         "type": "antecedent_familial",
+         "libelle": "cancer",
+         "premier_degre": true
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "compte_rendu",
+     "libelle": "Coloscopie",
+     "depuis_mois": 60,
+     "non": true
+    },
+    {
+     "type": "element_suivi",
+     "libelle": "Coloscopie",
+     "op": "existe",
+     "depuis_mois": 60,
+     "non": true
+    }
+   ]
+  },
+  "alors": [
+   {
+    "action": "ordonnance",
+    "categorie": "autre",
+    "examens": [
+     "Recherche de sang dans les selles"
+    ],
+    "frequence": {
+     "mode": "tous_les",
+     "valeur": 2,
+     "unite": "ans"
+    }
+   }
+  ],
+  "points_a_valider": [
+   "Écart avec le programme officiel : sante.fr (18/03/2026) indique « 50 à 74 ans » ; le document indique 50 à 75 ans.",
+   "Le programme officiel exclut les antécédents personnels ou familiaux de « polype, de cancer ou de maladie touchant le côlon ou le rectum » (sans limiter au 1er degré) ; le document limite aux parents du 1er degré et ajoute « CR de coloscopie de moins de 5 ans »."
+  ],
+  "references": [
+   {
+    "libelle": "sante.fr — « Cancer colorectal : pourquoi se faire dépister ? » (18/03/2026)",
+    "url": "https://www.sante.fr/node/6706903",
+    "extrait": "personnes âgées de 50 à 74 ans … un test tous les 2 ans … test immunologique à réaliser chez soi"
+   }
+  ]
+ },
+ {
+  "id": "diabete-hba1c-sup-7",
+  "libelle": "Règle diabète HbA1c > 7 %",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Document « Plan de soins » (Fred), transcrit dans regles/diabete-hba1c-sup-7.yaml",
+  "evaluer_quand": [
+   "ouverture_dossier",
+   "integration_resultat",
+   "quotidien"
+  ],
+  "quand": {
+   "op": "ET",
+   "conditions": [
+    {
+     "type": "element_suivi",
+     "libelle": "HbA1c",
+     "op": ">",
+     "valeur": 7
+    }
+   ]
+  },
+  "alors": [
+   {
+    "action": "ordonnance",
+    "categorie": "biologie",
+    "examens": [
+     "NFS",
+     "EAL",
+     "SGOT",
+     "SGPT",
+     "Gamma GT",
+     "TP",
+     "Clairance de la créatinine",
+     "RAC"
+    ],
+    "frequence": {
+     "mode": "tous_les",
+     "valeur": 1,
+     "unite": "ans"
+    },
+    "cherche": {
+     "NFS": "Hémoglobine",
+     "EAL": "Chol total",
+     "SGOT": "SGOT",
+     "SGPT": "SGPT",
+     "Gamma GT": "Gamma GT",
+     "TP": "TP",
+     "Clairance de la créatinine": "Clairance de la créatinine CKD-EPI",
+     "RAC": "RAC"
+    }
+   },
+   {
+    "action": "ordonnance",
+    "categorie": "biologie",
+    "examens": [
+     "HbA1c"
+    ],
+    "frequence": {
+     "mode": "tous_les",
+     "valeur": 3,
+     "unite": "mois"
+    },
+    "cherche": {
+     "HbA1c": "HbA1c"
+    }
+   },
+   {
+    "action": "ordonnance",
+    "categorie": "autre",
+    "examens": [
+     "ECG"
+    ],
+    "frequence": {
+     "mode": "tous_les",
+     "valeur": 1,
+     "unite": "ans"
+    },
+    "cherche": {
+     "ECG": "ECG dans ES et doc"
+    }
+   }
+  ]
+ },
+ {
+  "id": "iec-ara2",
+  "libelle": "Patients sous IEC ou ARA2",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Document « Plan de soins » (Fred), transcrit dans regles/iec-ara2.yaml",
+  "evaluer_quand": [
+   "nouvelle_prescription",
+   "quotidien"
+  ],
+  "quand": {
+   "op": "ET",
+   "conditions": [
+    {
+     "type": "medicament",
+     "atc": [
+      "C09",
+      "C09C"
+     ]
+    }
+   ]
+  },
+  "alors": [
+   {
+    "action": "ordonnance",
+    "phase": "instauration",
+    "categorie": "biologie",
+    "examens": [
+     "Ionogramme (Na, K)",
+     "Créatinine"
+    ],
+    "frequence": {
+     "mode": "jalons",
+     "jalons": [
+      "S2-4",
+      "M12"
+     ]
+    }
+   },
+   {
+    "action": "ordonnance",
+    "categorie": "biologie",
+    "examens": [
+     "Ionogramme",
+     "Clairance de la créatinine"
+    ],
+    "frequence": {
+     "mode": "tous_les",
+     "valeur": 1,
+     "unite": "ans",
+     "max": 2
+    },
+    "phase": "entretien",
+    "cherche": {
+     "Ionogramme": "Sodium",
+     "Clairance de la créatinine": "Créatinine"
+    }
+   }
+  ],
+  "points_a_valider": [
+   "Ligne « Microalbuminurie » : élément à prescrire non renseigné dans le document source."
+  ]
+ },
+ {
+  "id": "lamotrigine",
+  "libelle": "Patient sous lamotrigine",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Document « Plan de soins » (Fred), transcrit dans regles/lamotrigine.yaml",
+  "evaluer_quand": [
+   "nouvelle_prescription",
+   "quotidien"
+  ],
+  "quand": {
+   "op": "ET",
+   "conditions": [
+    {
+     "type": "medicament",
+     "atc": [
+      "N03AX09"
+     ]
+    }
+   ]
+  },
+  "alors": [
+   {
+    "action": "ordonnance",
+    "phase": "instauration",
+    "categorie": "biologie",
+    "examens": [
+     "NFS",
+     "Ionogramme",
+     "EAL",
+     "Bilan hépatique",
+     "Créatinine / Clairance de la créatinine"
+    ],
+    "frequence": {
+     "mode": "jalons",
+     "jalons": [
+      "T0",
+      "M12"
+     ]
+    }
+   },
+   {
+    "action": "ordonnance",
+    "phase": "instauration",
+    "categorie": "biologie",
+    "examens": [
+     "Glycémie"
+    ],
+    "frequence": {
+     "mode": "jalons",
+     "jalons": [
+      "T0",
+      "M6",
+      "M12"
+     ]
+    }
+   },
+   {
+    "action": "ordonnance",
+    "categorie": "biologie",
+    "examens": [
+     "NFS",
+     "Ionogramme",
+     "Glycémie",
+     "EAL",
+     "Bilan hépatique",
+     "Clairance de la créatinine"
+    ],
+    "frequence": {
+     "mode": "tous_les",
+     "valeur": 12,
+     "unite": "mois"
+    },
+    "phase": "entretien",
+    "cherche": {
+     "NFS": "Hémoglobine",
+     "Ionogramme": "Sodium",
+     "Glycémie": "Glycémie",
+     "EAL": "Chol LDL",
+     "Bilan hépatique": "SGOT",
+     "Clairance de la créatinine": "Clairance de la créatinine"
+    }
+   }
+  ]
+ },
+ {
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Recommandation officielle lue sur la source citée — non validée cliniquement",
+  "id": "depistage-col-uterus-25-29",
+  "libelle": "Dépistage du cancer du col de l'utérus (25–29 ans)",
+  "evaluer_quand": [
+   "ouverture_dossier",
+   "quotidien"
+  ],
+  "quand": {
+   "op": "ET",
+   "conditions": [
+    {
+     "type": "sexe",
+     "valeur": "F"
+    },
+    {
+     "type": "age",
+     "op": "entre",
+     "valeur": 25,
+     "valeur2": 29
+    }
+   ]
+  },
+  "alors": [
+   {
+    "action": "ordonnance",
+    "categorie": "autre",
+    "examens": [
+     "Examen cytologique (dépistage du col de l'utérus)"
+    ],
+    "frequence": {
+     "mode": "tous_les",
+     "valeur": 3,
+     "unite": "ans"
+    }
+   }
+  ],
+  "points_a_valider": [
+   "Rythme de 3 ans valable « après deux premiers tests réalisés à 1 an d'intervalle et dont les résultats sont normaux » : les deux premiers tests ne sont pas représentés.",
+   "Classement de l'examen (biologie / prévention) à confirmer."
+  ],
+  "references": [
+   {
+    "libelle": "HAS — « Dépistage du cancer du col de l'utérus : le test HPV-HR recommandé chez les femmes de plus de 30 ans » (06/07/2020)",
+    "url": "https://www.has-sante.fr/jcms/p_3192618/fr/depistage-du-cancer-du-col-de-l-uterus-le-test-hpv-hr-recommande-chez-les-femmes-de-plus-de-30-ans",
+    "extrait": "le test de dépistage est réalisé par examen cytologique tous les 3 ans"
+   }
+  ]
+ },
+ {
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Recommandation officielle lue sur la source citée — non validée cliniquement",
+  "id": "depistage-col-uterus-30-65",
+  "libelle": "Dépistage du cancer du col de l'utérus (30–65 ans)",
+  "evaluer_quand": [
+   "ouverture_dossier",
+   "quotidien"
+  ],
+  "quand": {
+   "op": "ET",
+   "conditions": [
+    {
+     "type": "sexe",
+     "valeur": "F"
+    },
+    {
+     "type": "age",
+     "op": "entre",
+     "valeur": 30,
+     "valeur2": 65
+    }
+   ]
+  },
+  "alors": [
+   {
+    "action": "ordonnance",
+    "categorie": "autre",
+    "examens": [
+     "Test HPV-HR (dépistage du col de l'utérus)"
+    ],
+    "frequence": {
+     "mode": "tous_les",
+     "valeur": 5,
+     "unite": "ans"
+    }
+   }
+  ],
+  "points_a_valider": [
+   "Premier test HPV-HR « 3 ans après le dernier examen cytologique dont le résultat est normal » : non représenté.",
+   "Nouveau test tous les 5 ans « dès lors que le résultat du test est négatif » : la règle ne regarde pas le résultat.",
+   "Classement de l'examen (biologie / prévention) à confirmer."
+  ],
+  "references": [
+   {
+    "libelle": "HAS — « Dépistage du cancer du col de l'utérus : le test HPV-HR recommandé chez les femmes de plus de 30 ans » (06/07/2020)",
+    "url": "https://www.has-sante.fr/jcms/p_3192618/fr/depistage-du-cancer-du-col-de-l-uterus-le-test-hpv-hr-recommande-chez-les-femmes-de-plus-de-30-ans",
+    "extrait": "Un nouveau test est refait tous les 5 ans, jusqu'à l'âge de 65 ans, dès lors que le résultat du test est négatif"
+   }
+  ]
+ },
+ {
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Recommandation officielle lue sur la source citée — non validée cliniquement",
+  "id": "depistage-sein-organise",
+  "libelle": "Dépistage organisé du cancer du sein (50–74 ans)",
+  "evaluer_quand": [
+   "ouverture_dossier",
+   "quotidien"
+  ],
+  "quand": {
+   "op": "ET",
+   "conditions": [
+    {
+     "type": "sexe",
+     "valeur": "F"
+    },
+    {
+     "type": "age",
+     "op": "entre",
+     "valeur": 50,
+     "valeur2": 74
+    }
+   ]
+  },
+  "alors": [
+   {
+    "action": "ordonnance",
+    "categorie": "imagerie",
+    "examens": [
+     "Mammographie"
+    ],
+    "frequence": {
+     "mode": "tous_les",
+     "valeur": 2,
+     "unite": "ans"
+    }
+   }
+  ],
+  "points_a_valider": [
+   "La source exclut les femmes avec symptômes ou antécédents personnels/familiaux de risque élevé : non représenté (à définir : quels éléments du dossier ?).",
+   "La source associe un examen clinique des seins à la mammographie : non représenté.",
+   "La page Service-Public indique elle-même qu'elle est ancienne : vérifier sur le site de l'Assurance maladie ou de l'INCa."
+  ],
+  "references": [
+   {
+    "libelle": "Service-Public — « Cancer du sein : un mois pour sensibiliser au dépistage » (01/10/2024)",
+    "url": "https://www.service-public.gouv.fr/particuliers/actualites/A15216?lang=fr",
+    "extrait": "À partir de l'âge de 50 ans, et jusqu'à 74 ans … tous les 2 ans … une mammographie"
+   }
+  ]
+ },
+ {
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Recommandation officielle lue sur la source citée — non validée cliniquement",
+  "id": "lithium-surveillance",
+  "libelle": "Traitement par lithium — bilan initial et lithiémies de départ",
+  "evaluer_quand": [
+   "nouvelle_prescription",
+   "quotidien"
+  ],
+  "quand": {
+   "op": "ET",
+   "conditions": [
+    {
+     "type": "medicament",
+     "atc": "N05AN01"
+    }
+   ]
+  },
+  "alors": [
+   {
+    "action": "ordonnance",
+    "phase": "instauration",
+    "categorie": "biologie",
+    "examens": [
+     "Créatinine",
+     "Clairance de la créatinine",
+     "Calcémie",
+     "Protéinurie",
+     "Ionogramme",
+     "NFS",
+     "TSH",
+     "Glycémie à jeun"
+    ],
+    "frequence": {
+     "mode": "jalons",
+     "jalons": [
+      "T0"
+     ]
+    }
+   },
+   {
+    "action": "ordonnance",
+    "phase": "instauration",
+    "categorie": "autre",
+    "examens": [
+     "ECG",
+     "EEG"
+    ],
+    "frequence": {
+     "mode": "jalons",
+     "jalons": [
+      "T0"
+     ]
+    }
+   },
+   {
+    "action": "ordonnance",
+    "phase": "instauration",
+    "categorie": "biologie",
+    "examens": [
+     "Lithiémie"
+    ],
+    "frequence": {
+     "mode": "jalons",
+     "jalons": [
+      "S1",
+      "S2"
+     ]
+    }
+   }
+  ],
+  "points_a_valider": [
+   "Source = RCP de TERALITHE LP 400 mg uniquement : vérifier les autres spécialités contenant du lithium.",
+   "Lithiémies à J7, J14 « et si nécessaire J21 » : J21 non représenté.",
+   "Après lithiémie efficace : « toutes les semaines pendant le premier mois », puis mensuelle pendant le premier trimestre, puis tous les deux mois. Le point de départ (date d'obtention de la lithiémie efficace) n'est pas représentable : non encodé.",
+   "Pendant le traitement, le RCP demande des « contrôles réguliers » de la créatininémie et de la calcémie, une surveillance régulière de l'ECG et de la TSH, sans donner de fréquence : à définir par le médecin (rien n'est inventé ici).",
+   "Le bilan « avant le traitement » est placé à T0 (date de début) : à affiner.",
+   "Glycémie : le RCP demande un contrôle en cas de prise de poids (condition non représentée)."
+  ],
+  "references": [
+   {
+    "libelle": "Base de données publique des médicaments — RCP TERALITHE LP 400 mg (rubriques 4.2, 4.4, 5.1 ; mis à jour le 27/07/2026)",
+    "url": "http://base-donnees-publique.medicaments.gouv.fr/medicament/67292476/extrait",
+    "extrait": "Lithium, code ATC : N05AN01 ; lithiémies déterminées à J7, J14 et si nécessaire J21"
+   }
+  ]
+ },
+ {
+  "actif": true,
+  "statut_validation": "a_valider",
+  "origine": "Recommandation officielle lue sur la source citée — non validée cliniquement",
+  "id": "rappel-dtcap-ages-fixes",
+  "libelle": "Rappel dTcaP aux âges fixes (25, 45, 65 ans, puis tous les 10 ans)",
+  "evaluer_quand": [
+   "ouverture_dossier",
+   "quotidien"
+  ],
+  "quand": {
+   "op": "ET",
+   "conditions": [
+    {
+     "op": "OU",
+     "conditions": [
+      {
+       "type": "age",
+       "op": "=",
+       "valeur": 25
+      },
+      {
+       "type": "age",
+       "op": "=",
+       "valeur": 45
+      },
+      {
+       "type": "age",
+       "op": "=",
+       "valeur": 65
+      },
+      {
+       "type": "age",
+       "op": "=",
+       "valeur": 75
+      },
+      {
+       "type": "age",
+       "op": "=",
+       "valeur": 85
+      }
+     ]
+    },
+    {
+     "type": "vaccin",
+     "libelle": "dTcaP",
+     "statut": "non_fait"
+    }
+   ]
+  },
+  "alors": [
+   {
+    "action": "indicateur_prevention",
+    "libelle": "Rappel dTcaP à prévoir (âge fixe)",
+    "niveau": "alerte",
+    "ordonnance": {
+     "categorie": "vaccin",
+     "examens": [
+      "Vaccin dTcaP"
+     ],
+     "frequence": {
+      "mode": "une_fois"
+     }
+    }
+   }
+  ],
+  "points_a_valider": [
+   "Âge exact : un patient ayant dépassé l'âge fixe sans rappel n'est plus signalé. La source parle d'âges fixes, pas de rattrapage : à définir.",
+   "« Vaccin non fait » n'a pas de fenêtre de temps dans cette règle (un ancien vaccin compte comme fait) : à définir.",
+   "Libellé du vaccin à faire correspondre à celui du module vaccination de XMed (la capture affiche « Vaccin DTCP »).",
+   "Le calendrier vaccinal 2026 (PDF, avril 2026) n'a pas pu être lu depuis cet environnement ; une recherche signale une mention de suspension du dTcaP chez les 65 ans et plus, non vérifiée : à confirmer avant d'activer les âges ≥ 65."
+  ],
+  "references": [
+   {
+    "libelle": "Vaccination Info Service — « Adultes (27 à 64 ans) » (mis à jour le 20/04/2026)",
+    "url": "https://www.vaccination-info-service.fr/La-vaccination-au-cours-de-la-vie/Adultes-27-a-64-ans",
+    "extrait": "les rappels se font tous les 20 ans aux âges fixes de 25 ans, 45 ans, 65 ans … à partir de 65 ans les rappels se font tous les 10 ans (75 ans, 85 ans...)"
+   }
+  ]
+ }
+];
+</script>
+<script>
+/* ===== Utilitaires ===== */
+const DAY=864e5, UNIT={semaine:7,mois:30.4375,an:365.25};
+const addDays=(s,n)=>new Date(new Date(s+'T00:00:00Z').getTime()+Math.round(n)*DAY).toISOString().slice(0,10);
+const diffDays=(a,b)=>Math.round((new Date(b)-new Date(a))/DAY);
+const fr=s=>s?s.split('-').reverse().join('/'):'';
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/cholesterol/g,'chol').replace(/\s+/g,' ').trim();
+const nk=s=>norm(s.replace(/\(.*?\)/g,''));
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const perDays=p=>Math.round(p.min*UNIT[p.unite]);
+function fmtPer(d){const y=d/365.25;if(d>=330&&Math.abs(y-Math.round(y))<.05){const n=Math.round(y);return n+' an'+(n>1?'s':'')}
+ const m=d/30.4375;if(m>=1.5||Math.abs(m-Math.round(m))<.1&&m>=1)return Math.round(m)+' mois';return Math.round(d/7)+' sem'}
+function parsePer(t){const m=/^\s*(\d+(?:[.,]\d+)?)\s*(sem|mois|an)/i.exec(t||'');if(!m)return null;
+ return Math.round(parseFloat(m[1].replace(',','.'))*({sem:7,mois:30.4375,an:365.25}[m[2].toLowerCase()]))}
+const jalDays=j=>j==='T0'?0:j[0]==='M'?Math.round(+j.slice(1)*30.4375):+j.slice(1).split('-')[0]*7;
+const ruleById=id=>RULES.find(r=>r.id===id);
+const RULES=window.REGLES;
+
+/* ===== État (patient fictif d'après les captures) ===== */
+const DRUGS=[{label:'Lamotrigine',atc:'N03AX09'},{label:'Médicament ATC C09 (exemple de maquette)',atc:'C09'},{label:'Médicament ATC C09C (exemple de maquette)',atc:'C09C'},{label:'Lithium (TERALITHE, ATC N05AN01)',atc:'N05AN01'}];
+function initial(){return{
+ today:'2026-11-18',naissance:'1980-11-12',sexe:'',policy:'min',tab:'dossier',toast:null,
+ episodes:[{d:'2025-08-24',l:'Tabagisme'},{d:'2025-09-04',l:'Diabète de type 2'},{d:'2026-11-12',l:'Coronaropathie'}],
+ atcdFam:[{l:'Emphysème du poumon',lien:'Grand-oncle m.'},{l:'Lymphome cérébral',lien:'Grand-père'}],
+ coloscopieCR:null,
+ traitements:[{label:'OPTICRON 2% COL UNIDOSE 30',atc:null,debut:'2026-11-13'},{label:'SIMVASTATINE 20MG EVOL CPR SEC 28',atc:null,debut:'2026-09-02'},{label:'AERIUS 5MG CPR 30',atc:null,debut:'2026-11-13'},{label:'NASONEX 50MCG/DOSE PULV 140',atc:null,debut:'2026-11-13'}],
+ suivi:[{date:'2026-10-26',lib:'IMC',val:16.6,unit:'kg/m²'},{date:'2026-10-26',lib:'Poids',val:60,unit:'kg'},
+  {date:'2026-08-08',lib:'HbA1c',val:7.2,unit:'%',hi:1},{date:'2026-04-01',lib:'HbA1c',val:8,unit:'%',hi:1},
+  {date:'2025-11-12',lib:'Cholestérol HDL',val:0.8,unit:'g/l'},{date:'2025-11-12',lib:'Cholestérol total',val:3,unit:'g/l',hi:1},
+  {date:'2025-11-12',lib:'Cholestérol LDL',val:1.5,unit:'g/l'},{date:'2025-06-01',lib:'Hémoglobine',val:12.2,unit:'g/100ml'},
+  {date:'2025-11-12',lib:'PAS/PAD',val:'170/100',unit:'mmHg'}],
+ patientPer:{},ovr:{},prescrit:{},log:[],hprimDone:false};}
+let S=initial();
+
+/* ===== Protase : moteur partagé (protase/protase.js), règles au format v1 ===== */
+const keyForLabel=l=>Protase.cleDepuisLibelle(l,RULES);
+const age=()=>Protase.age(S,S.today);
+const patientModel=()=>({...S,vaccins:[],documents:S.coloscopieCR?[{libelle:'Coloscopie',date:S.coloscopieCR}]:[]});
+const compute=()=>Protase.planifier(RULES,patientModel(),{today:S.today,overrides:S.ovr,patientPer:S.patientPer,policy:S.policy,prescrit:S.prescrit});
+const trHTML=r=>`<li class="${r.ok?'yes':'no'}">${r.ok?'✔':'✘'} ${esc(r.t)}${r.k?`<ul style="list-style:none;margin:0 0 0 14px;padding:0">${r.k.map(trHTML).join('')}</ul>`:''}</li>`;
+const pending=C=>C.bio.filter(x=>x.st==='late');
+const STL={late:'En retard',soon:'Bientôt',ok:'À jour',presc:'Prescrit',na:'Plan 1ʳᵉ année réalisé'};
+const pill=w=>`<span class="pill ${w.st}">${w.st==='late'&&w.never?'Jamais fait':STL[w.st]}</span>`;
+const srcTags=w=>w.srcs.map(s=>`<span class="src ${s.mod?'mod':''}" title="${esc(s.r.libelle)} — ${s.phase}${s.mod?' (périodicité corrigée)':''}">${esc(s.r.libelle.replace(/^(Patients? sous |Règle |Requête — )/,''))}${s.phase==='instauration'?' · instauration':''}</span>`).join('');
+const perCell=w=>[w.jal.length?'Jalons : '+w.jal.join(', '):'',w.days?'tous les '+fmtPer(w.days)+(w.pat!=null?` <span class="m">(patient : ${fmtPer(w.pat)})</span>`:''):''].filter(Boolean).join('<br>');
+
+/* ===== Actions ===== */
+function instaurer(i){const d=DRUGS[i];S.traitements.unshift({label:d.label.toUpperCase(),atc:d.atc,debut:S.today,neuf:true});
+ const C=compute(),r=C.ev.find(x=>x.ev.ok&&x.ev.treat&&x.ev.treat.atc===d.atc&&x.ev.treat.neuf);
+ const n=C.bio.filter(w=>w.srcs.some(s=>s.start===S.today&&s.phase==='instauration')).length;
+ S.toast=r?`Une règle existe pour ce traitement (« ${r.r.libelle} ») — la ligne est colorée ; la table de prescription biologique a été renseignée avec ${n} élément(s) (plan de la 1ʳᵉ année).`:null;render()}
+function prescrire(keys,man){const dd=S.today;keys.forEach(k=>S.prescrit[k]=dd);
+ S.log.unshift(`${fr(dd)} — Prescription biologique : ${keys.map(k=>compute().rows.find(w=>w.key===k)?.label||k).concat(man?[man]:[]).join(', ')}`);S.toast='Prescription validée ('+keys.length+' élément(s)).';S.tab='dossier';render()}
+
+/* ===== Vues ===== */
+const TABS=[['dossier','Dossier patient'],['plan','Plan de soins'],['presc','Prescription biologique'],['hprim','Intégration HPRIM'],['regles','Règles']];
+function render(){const C=compute(),np=pending(C).length;
+ document.getElementById('sim').innerHTML=`<b>Simulateur</b>
+ <label>Date du jour <input type="date" value="${S.today}" onchange="S.today=this.value;S.toast=null;render()"></label>
+ <label>Sexe <select onchange="S.sexe=this.value;render()"><option value="">non précisé</option><option value="F" ${S.sexe==='F'?'selected':''}>F</option><option value="M" ${S.sexe==='M'?'selected':''}>M</option></select></label>
+ <label>Naissance <input type="date" value="${S.naissance}" onchange="S.naissance=this.value;render()"> (${age()} ans)</label>
+ <label>Périodicité saisie pour le patient <select onchange="S.policy=this.value;render()"><option value="min" ${S.policy==='min'?'selected':''}>retenir la plus courte (v0)</option><option value="patient" ${S.policy==='patient'?'selected':''}>prime sur la règle</option></select></label>
+ <label>Instaurer <select id="drug">${DRUGS.map((d,i)=>`<option value="${i}">${esc(d.label)}</option>`).join('')}</select><button onclick="instaurer(+document.getElementById('drug').value)">Instaurer</button></label>
+ <button onclick="if(confirm('Réinitialiser la maquette ?')){S=initial();render()}">Réinitialiser</button>`;
+ document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<div class="tab ${S.tab===k?'on':''}" onclick="S.tab='${k}';render()">${l}${k==='presc'&&np?`<span class="badge">${np}</span>`:''}</div>`).join('');
+ const v={dossier:vDossier,plan:vPlan,presc:vPresc,hprim:vHprim,regles:vRegles}[S.tab](C);
+ const toast=S.toast?`<div class="toast">${esc(S.toast)} <a href="#" onclick="S.toast=null;render();return false">✕</a></div>`:'';
+ document.getElementById('main').innerHTML=toast+v}
+
+function bannerPending(C){const n=pending(C).length;return C.indicateurs.map(i=>`<div class="alert"><span>${i.niveau==='alerte'?'🔔':'ℹ'} <b>${esc(i.libelle)}</b> <span class="m">— ${esc(i.r.libelle)}</span></span></div>`).join('')+(n?`<div class="alert"><span><b>${n} prescription(s) biologique(s) en attente</b> — éléments de suivi dont le délai est dépassé.</span><button class="pri" onclick="S.tab='presc';render()">Ouvrir la prescription</button></div>`:'')}
+function vDossier(C){
+ const trs=S.traitements.map(t=>{const hit=C.ev.find(x=>x.ev.ok&&x.ev.treat===t);return`<tr class="${hit?'rowhl':''}"><td>${fr(t.debut)}</td><td>${esc(t.label)}${hit?`<br><span class="src">Règle : ${esc(hit.r.libelle)}</span>`:''}</td></tr>`}).join('');
+ const sv=[...S.suivi].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<tr><td>${fr(x.date)}</td><td class="${x.hi?'r':''}">${esc(x.lib)}</td><td class="num ${x.hi?'r':''}">${esc(x.val)}</td><td>${esc(x.unit)}</td><td>${x.prochain?fr(x.prochain):''}</td></tr>`).join('');
+ const prev=C.prev.map(w=>`<tr><td>${esc(w.label)}</td><td>${w.due?fr(w.due):''}</td><td>${pill(w)}</td></tr>`).join('')||'<tr><td colspan=3 class="m">Aucun élément non biologique proposé</td></tr>';
+ return bannerPending(C)+`<div class="grid">
+ <div class="pn"><h4 class="h-cy">Identité</h4><table><tr><td>Né(e) le</td><td>${fr(S.naissance)} (${age()} ans)</td></tr><tr><td>Patient</td><td>DOE John — fictif</td></tr></table></div>
+ <div class="pn"><h4 class="h-sage">Épisodes et suivis en cours</h4><table>${S.episodes.map(e=>`<tr><td>${fr(e.d)}</td><td>${esc(e.l)}</td></tr>`).join('')}</table></div>
+ <div class="pn"><h4 class="h-lav">Traitements</h4><table><tr><th>Début</th><th>Traitement</th></tr>${trs}</table></div>
+ <div class="pn"><h4 class="h-lav">Éléments de suivi (Biologie)</h4><div class="scroll"><table><tr><th>Date</th><th>Examen</th><th>Valeur</th><th>Unité</th><th>Prochain</th></tr>${sv}</table></div></div>
+ <div class="pn"><h4 class="h-lav">Prévention — examens et consultations proposés par le plan</h4><table><tr><th>Examen</th><th>Échéance</th><th></th></tr>${prev}</table></div>
+ <div class="pn"><h4 class="h-sage">Contacts (cette session)</h4><div style="padding:6px 8px">${S.log.length?S.log.map(esc).join('<br>'):'<span class="m">—</span>'}</div></div></div>`}
+
+function vPlan(C){
+ const rows=C.bio.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?`${fr(w.last.date)} — ${esc(w.last.val)} ${esc(w.last.unit)}`:'<span class="m">aucun résultat</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}${w.prescrit?`<br><span class="m">le ${fr(w.prescrit)}</span>`:''}</td></tr>`).join('');
+ const rowsP=C.prev.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?fr(w.last.date):'<span class="m">—</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}</td></tr>`).join('');
+ const rl=C.ev.map(({r,ev})=>`<div style="margin:4px 0"><span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'Déclenchée':'Non déclenchée'}</span> <b>${esc(r.libelle)}</b><ul class="crit" style="margin:2px 0 0 18px;padding:0;list-style:none">${ev.inactive?'<li class="m">règle désactivée</li>':trHTML(ev)}</ul></div>`).join('');
+ return bannerPending(C)+`<h3>Plan de soins — biologie</h3><div class="scroll"><table><tr><th>Élément à prescrire</th><th>Règles à l'origine</th><th>Périodicité retenue</th><th>Dernier résultat (éléments de suivi)</th><th>Échéance</th><th>Statut</th></tr>${rows||'<tr><td colspan=6 class="m">Aucune règle déclenchée</td></tr>'}</table></div>
+ <div class="note"><b>Fusion :</b> quand plusieurs règles concernent le même élément, on retient la période la plus courte (document) ; la périodicité saisie pour le patient est prise en compte selon le réglage du simulateur. Le <b>dernier résultat</b> est lu dans les éléments de suivi — pas de source parallèle. Cadre orange = périodicité corrigée par l'utilisateur.</div>
+ <h3>Plan de prévention — éléments non biologiques</h3><div class="scroll"><table><tr><th>Examen</th><th>Règles à l'origine</th><th>Périodicité</th><th>Dernier fait</th><th>Échéance</th><th>Statut</th></tr>${rowsP||'<tr><td colspan=6 class="m">—</td></tr>'}</table></div>
+ <div class="note q"><b>À valider :</b> le classement « non biologique » (ECG, recherche de sang dans les selles) est une hypothèse de la maquette, d'après vos captures (ces examens figurent dans Prévention).</div>
+ <h3>Évaluation des règles pour ce patient</h3>${rl}`}
+
+function vPresc(C){
+ const rows=C.bio.filter(w=>w.due&&w.due<=addDays(S.today,365)&&!w.prescrit);
+ const body=rows.map(w=>`<tr><td><input type="checkbox" class="pk" value="${w.key}" ${w.st==='late'?'checked':''}></td><td><b>${esc(w.label)}</b></td><td>${pill(w)}</td><td>${w.due<=S.today?'<b>maintenant</b>':'le '+fr(w.due)}</td><td>${w.last?`${fr(w.last.date)} — ${esc(w.last.val)} ${esc(w.last.unit)}`:'<span class="m">jamais</span>'}</td><td>${srcTags(w)}</td></tr>`).join('');
+ return`<h3>Prescription de biologie — proposée pour l'année à venir (à jour des délais)</h3>
+ <p class="m">Ouverture depuis n'importe quel motif de consultation. Les éléments en retard sont pré-cochés ; les autres sont à venir dans les 12 mois.</p>
+ <table><tr><th></th><th>Examen</th><th>Statut</th><th>À réaliser</th><th>Dernier résultat</th><th>Règles</th></tr>${body||'<tr><td colspan=6 class="m">Rien à proposer.</td></tr>'}</table>
+ <p><label>Compléter à la main : <input id="man" placeholder="ex. TSH" size="20"></label> <button disabled title="Hors périmètre de la maquette">Depuis l'historique…</button></p>
+ <p><button class="pri" onclick="prescrire([...document.querySelectorAll('.pk:checked')].map(x=>x.value),document.getElementById('man').value.trim())" ${rows.length||1?'':'disabled'}>Valider la prescription</button></p>`}
+
+const INCOMING=[['HBA1C','HbA1c',6.8,'%'],['HEMOGLOBINE','Hémoglobine',12.8,'g/100ml'],['CHOLESTEROL TOTAL','Cholestérol total',2.1,'g/l'],['ASAT (SGOT)','SGOT',24,'UI/l']];
+function vHprim(C){
+ if(S.hprimDone)return`<p class="m">Document déjà incorporé (maquette).</p>`;
+ const rows=INCOMING.map(([lab,x,v,u],i)=>{const k=keyForLabel(x),w=C.rows.find(r=>r.key===k),p=w&&w.days?addDays(S.today,w.days):'';
+  return`<tr><td><input type="checkbox" class="hk" value="${i}" checked></td><td>${esc(lab)}</td><td>${esc(x)}</td><td class="num">${v}</td><td>${esc(u)}</td><td><input type="date" id="pr${i}" data-p="${p}" value="${p}">${p?`<br><span class="m">proposé : ${w.srcs.map(s=>esc(s.r.libelle)).join(', ')}</span>`:'<br><span class="m">aucune règle</span>'}</td></tr>`}).join('');
+ return`<h3>Liste des documents reçus — résultat de biologie (valeurs fictives du <b>${fr(S.today)}</b>)</h3>
+ <table><tr><th></th><th>Libellé labo</th><th>Libellé XMed</th><th>Valeur</th><th>Unité</th><th>Prochain</th></tr>${rows}</table>
+ <div class="note">À l'incorporation, le <b>Prochain</b> est <b>présenté automatiquement</b> d'après le plan. Si vous le modifiez, l'écart est enregistré comme périodicité propre à ce patient (table de périodicité par patient).</div>
+ <div class="note q"><b>Cas à discuter :</b> si l'on incorpore HbA1c = 6,8 % (≤ 7 %), la règle « diabète HbA1c > 7 % » ne se déclenche plus : le suivi de l'HbA1c disparaît du plan. Une règle « diabète » sans seuil, ou une seconde règle pour HbA1c ≤ 7 %, est-elle voulue ?</div>
+ <p><button class="pri" onclick="incorporer()">Incorporer</button></p>`}
+function incorporer(){const C=compute();
+ [...document.querySelectorAll('.hk:checked')].forEach(c=>{const i=+c.value,[lab,x,v,u]=INCOMING[i],el=document.getElementById('pr'+i),p=el.dataset.p,val=el.value,k=keyForLabel(x);
+  S.suivi.push({date:S.today,lib:x,val:v,unit:u,prochain:val||undefined});
+  if(val&&p&&val!==p){S.patientPer[k]=diffDays(S.today,val)}});
+ S.hprimDone=true;S.toast='Résultats incorporés dans les éléments de suivi'+(Object.keys(S.patientPer).length?' ; périodicité(s) propre(s) au patient enregistrée(s).':'.');S.tab='plan';render()}
+
+function vRegles(C){
+ const frTxt=f=>f.mode==='une_fois'?'une seule fois':f.mode==='jalons'?'jalons '+f.jalons.join(', '):`${f.valeur}${f.max?' à '+f.max:''} ${f.unite}`;
+ return`<p class="m">Les règles sont <b>livrées</b> (périodicité de gauche, jamais modifiée) ; l'utilisateur saisit une périodicité <b>corrigée</b> (ex. « 6 mois », « 2 ans »). « Restaurer » revient à la règle d'origine (droit au remords). Les règles s'écrivent dans le <b>générateur</b>.</p>`+C.ev.map(({r,ev})=>{
+  const lignes=(r.alors||[]).map((a,ai)=>{const o=a.action==='ordonnance'?a:a.ordonnance;
+   if(!o)return`<tr><td colspan=5>${a.niveau==='alerte'?'🔔':'ℹ'} Indicateur : <b>${esc(a.libelle)}</b></td></tr>`;
+   return o.examens.map(ex=>{const k=`${r.id}|${ai}|${Protase.nk(ex)}`,ov=S.ovr[k],ch=o.cherche&&o.cherche[ex],f=o.frequence;
+    return`<tr><td>${o.phase==='instauration'?'Instauration':o.phase==='entretien'?'Après 1 an':'—'}</td><td>${esc(ch||'—')}</td><td><b>${esc(ex)}</b>${o.categorie!=='biologie'?` <span class="src">${esc(o.categorie)} · prévention</span>`:''}</td><td>${frTxt(f)}${f.max?' <span class="m">(borne basse retenue)</span>':''}</td>
+    <td>${f.mode==='tous_les'?`<input size="9" placeholder="—" value="${ov!=null?fmtPer(ov):''}" onchange="const d=parsePer(this.value);if(d)S.ovr['${k}']=d;else delete S.ovr['${k}'];render()"> ${ov!=null?`<button onclick="delete S.ovr['${k}'];render()">Restaurer</button>`:''}`:'<span class="m">—</span>'}</td></tr>`}).join('')}).join('');
+  return`<div class="rule"><header><b>${esc(r.libelle)}</b><span><span class="pill ${r.statut_validation==='valide'?'ok':'soon'}">${r.statut_validation==='valide'?'validée':'à valider'}</span> <span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'active pour ce patient':'inactive'}</span></span></header>
+  <div style="padding:6px 10px"><div class="m">SI ${esc(Protase.decrireArbre(r.quand))}</div>
+  ${(r.references||[]).length?`<div class="m">Sources : ${r.references.map(x=>x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.libelle)}</a>`:esc(x.libelle)).join(' · ')}</div>`:''}
+  ${(r.points_a_valider||[]).map(x=>`<div class="note q"><b>À compléter :</b> ${esc(x)}</div>`).join('')}
+  <table><tr><th>Phase</th><th>Élément à chercher</th><th>À prescrire</th><th>Périodicité livrée</th><th>Périodicité corrigée</th></tr>${lignes}</table></div></div>`}).join('')}
+(function(){const h=(location.hash||'').slice(1);
+ if(h==='lamotrigine'||h==='lithium'){if(h==='lithium'){S.sexe='F';S.naissance='1974-06-01'}instaurer(h==='lithium'?3:0);S.tab='plan'}
+ else if(['plan','presc','hprim','regles'].includes(h))S.tab=h})();
+render();
+</script>
+</body>
+</html>

@@ -21,6 +21,7 @@ prescription biologique.
 | `tests/protase.test.js` | Tests de Protase (`node tests/protase.test.js`) |
 | `generateur/index.html` | **Générateur de règles** (conditions ET/OU/NON → ordonnances, indicateurs de prévention) |
 | `docs/04-generateur.md` | Générateur : mode d'emploi, modèle, questions ouvertes |
+| `demo/`, `tools/build_demo.py` | Démo publiée (accueil avec essai en direct + maquette + éditeur) ; `python3 tools/build_demo.py` après `tools/build.py` |
 | `docs/xmed/` | Captures d'écran XMed de référence (dépôt privé) |
 | `tools/build.py`, `tools/migrer_v0_v1.py` | Valide les règles, régénère données et fichiers autonomes ; migre les YAML de Fred vers le format v1 |
 | `regles/schema.json` | Format d'une règle (JSON Schema) |
