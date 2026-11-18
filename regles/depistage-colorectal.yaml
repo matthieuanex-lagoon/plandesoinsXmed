@@ -1,0 +1,15 @@
+id: depistage-colorectal
+libelle: Requête — dépistage (recherche de sang dans les selles)
+source: document_source
+statut_validation: a_valider
+declencheur:
+  type: profil
+  criteres:                 # recopiés du document, non vérifiés
+    - age entre 50 et 75 ans
+    - sans épisode de soin (ouvert ou fermé) de polype du côlon, cancer du côlon, sigmoïde ou rectum
+    - sans antécédent familial 1er degré de polype ou de cancer
+    - sans CR de coloscopie de moins de 5 ans
+    - sans élément de suivi de coloscopie de moins de 5 ans
+entretien:
+  - prescrire: Recherche de sang dans les selles
+    periodicite: {min: 2, unite: an}

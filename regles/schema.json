@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Regle de plan de soins (v0)",
+  "type": "object",
+  "required": ["id", "libelle", "declencheur", "statut_validation"],
+  "properties": {
+    "id": {"type": "string"},
+    "libelle": {"type": "string"},
+    "source": {"type": "string", "enum": ["document_source", "amedulo", "utilisateur"]},
+    "statut_validation": {"type": "string", "enum": ["a_valider", "valide"]},
+    "declencheur": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {"type": "string", "enum": ["medicament", "profil", "pathologie"]},
+        "atc": {"type": "array", "items": {"type": "string"}},
+        "criteres": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "instauration": {"type": "array", "items": {"$ref": "#/$defs/item_jalons"}},
+    "entretien": {"type": "array", "items": {"$ref": "#/$defs/item_periodique"}},
+    "questions": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "periodicite": {
+      "type": "object",
+      "required": ["unite"],
+      "properties": {
+        "min": {"type": "number"}, "max": {"type": "number"},
+        "unite": {"type": "string", "enum": ["semaine", "mois", "an"]}
+      }
+    },
+    "item_jalons": {
+      "type": "object", "required": ["prescrire"],
+      "properties": {
+        "prescrire": {"type": "string"},
+        "jalons": {"type": "array", "items": {"type": "string"}},
+        "periodicite_texte": {"type": "string"}
+      }
+    },
+    "item_periodique": {
+      "type": "object", "required": ["prescrire", "periodicite"],
+      "properties": {
+        "chercher": {"type": "string"},
+        "prescrire": {"type": "string"},
+        "periodicite": {"$ref": "#/$defs/periodicite"},
+        "periodicite_corrigee": {"$ref": "#/$defs/periodicite"}
+      }
+    }
+  }
+}
