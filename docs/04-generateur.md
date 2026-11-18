@@ -3,7 +3,21 @@
 `generateur/index.html` — à ouvrir dans un navigateur, aucune installation. Module **indépendant** de la maquette `maquette/` :
 il sert à *écrire* les règles ; le moteur de XMed (ou la maquette, plus tard) les *lit*.
 
-## Ce que fait l'écran
+## Deux modes : simple et avancé
+
+Un interrupteur en haut de l'écran bascule entre les deux. **Même règle, même fichier JSON** : on peut passer de l'un à l'autre à tout moment, le mode choisi est mémorisé.
+
+| | Mode simple (par défaut) | Mode avancé |
+|---|---|---|
+| Conditions | Une liste de phrases (« Le patient a au moins … ans », « prend le médicament… », « n'a pas fait le vaccin… ») reliées par un seul choix : *toutes* ou *au moins une* | Arbre ET / OU / NON avec sous-groupes, tous les types et opérateurs |
+| Actions | Biologie, imagerie, traitement, vaccin, autre, alerte ; « Quand ? » = une fois / régulièrement / moments précis | Idem + phase (instauration / après 1 an), correspondance élément cherché, intervalle min–max |
+| Jalons | Boutons « + 7 jours », « + 1 mois »… | Idem |
+| Essai | Une seule règle : se déclenche ou non, **et pourquoi pas** ; ce qu'elle génère | Toutes les règles ensemble, avec la fusion (période la plus courte) |
+| Autres | JSON replié ; moments d'évaluation conservés mais masqués | Tout visible |
+
+Une règle qui sort du cadre simple (sous-groupes, antécédents familiaux, comptes rendus, comparaisons ≥ / ≤) s'ouvre avec un message et un bouton vers le mode avancé ; elle fonctionne normalement. Les réglages avancés d'une règle (phase, correspondances, intervalle) sont conservés quand on l'édite en mode simple.
+
+## Ce que fait l'écran (mode avancé)
 
 1. **SI** — on construit des conditions, combinables avec **ET / OU / NON** (groupes imbriqués possibles) :
    âge, sexe, pathologie/épisode, médicament (nom et/ou ATC), élément de suivi ou résultat de biologie (existe / absent / valeur > < =, sur les N derniers mois), vaccin fait / non fait.
