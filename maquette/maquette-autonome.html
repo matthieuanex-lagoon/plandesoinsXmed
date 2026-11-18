@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Plan de soins XMed</title>
+<style>
+:root{--bg:#e9edf2;--panel:#fff;--bd:#b9c3cf;--txt:#1d2733;--mut:#5d6b7a;--cy:#bdeeff;--lav:#d9d6ff;--sal:#ffd9d4;--sage:#d6ead9;--ora:#ffe7c2;
+--red:#c8281c;--grn:#1c7c3c;--blu:#1b5fa8;--sel:#cfe3f6}
+@media (prefers-color-scheme:dark){:root{--bg:#161b22;--panel:#1f2630;--bd:#3a4553;--txt:#e4e9ef;--mut:#9aa7b6;--cy:#1c4a5a;--lav:#2d2c55;--sal:#5a2a26;--sage:#27472f;--ora:#5a4420;--red:#ff7b6e;--grn:#5fd184;--blu:#7ab6f5;--sel:#27425e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.35 "Segoe UI",system-ui,sans-serif}
+.top{background:var(--panel);border-bottom:1px solid var(--bd);padding:6px 12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.top b{font-size:14px}.tag{background:var(--ora);padding:2px 8px;border-radius:10px;font-size:11px}
+.sim{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:6px 12px;background:var(--ora);border-bottom:1px solid var(--bd);font-size:12px}
+.sim label{display:flex;gap:4px;align-items:center}
+.tabs{display:flex;gap:2px;padding:6px 12px 0;flex-wrap:wrap}
+.tab{padding:6px 12px;border:1px solid var(--bd);border-bottom:none;background:var(--bg);cursor:pointer;border-radius:6px 6px 0 0;color:var(--mut)}
+.tab.on{background:var(--panel);color:var(--txt);font-weight:600}
+.badge{display:inline-block;min-width:18px;text-align:center;background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
+main{background:var(--panel);margin:0 12px 12px;border:1px solid var(--bd);padding:12px;min-height:60vh}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:10px}
+.pn{border:1px solid var(--bd);background:var(--panel)}.pn h4{margin:0;padding:4px 8px;font-size:12px}
+.h-cy{background:var(--cy)}.h-lav{background:var(--lav)}.h-sal{background:var(--sal)}.h-sage{background:var(--sage)}
+table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid var(--bd);padding:3px 6px;text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--mut);font-size:12px;background:var(--bg)}
+.r{color:var(--red)}.g{color:var(--grn)}.m{color:var(--mut)}.num{text-align:right;white-space:nowrap}
+.pill{border-radius:3px;padding:1px 6px;font-size:11px;color:#fff;white-space:nowrap}
+.late{background:var(--red)}.soon{background:#d98a00}.ok{background:var(--grn)}.presc{background:var(--blu)}.na{background:#7a8794}
+.src{display:inline-block;background:var(--lav);border-radius:3px;padding:0 5px;margin:1px;font-size:11px}
+.src.mod{outline:2px solid #d98a00}
+button{font:inherit;padding:4px 10px;border:1px solid var(--bd);background:var(--bg);color:var(--txt);cursor:pointer;border-radius:3px}
+button.pri{background:var(--blu);color:#fff;border-color:var(--blu)}button:disabled{opacity:.5;cursor:default}
+input,select{font:inherit;padding:2px 4px;border:1px solid var(--bd);background:var(--panel);color:var(--txt)}
+.note{background:var(--bg);border-left:3px solid #d98a00;padding:6px 10px;margin:8px 0;font-size:12px}
+.q{border-left-color:var(--blu)}
+.toast{background:var(--sage);border:1px solid var(--grn);padding:8px 12px;margin-bottom:10px}
+.alert{background:var(--sal);border:1px solid var(--red);padding:8px 12px;margin-bottom:10px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.rowhl{background:var(--ora)}
+h3{margin:14px 0 6px}h3:first-child{margin-top:0}
+.rule{border:1px solid var(--bd);margin-bottom:12px}.rule>header{padding:6px 10px;background:var(--lav);display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.crit li{margin:1px 0}.crit .no{color:var(--red)}.crit .yes{color:var(--grn)}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="top"><b>XMed — Plan de soins</b><span class="tag">MAQUETTE · données fictives · règles non validées cliniquement</span>
+<span class="m">Patient : <b>DOE John</b> (fictif, d'après captures)</span></div>
+<div class="sim" id="sim"></div>
+<div class="tabs" id="tabs"></div>
+<main id="main"></main>
+<script>
+// GENERE par tools/build_maquette_data.py — ne pas éditer
+window.REGLES = [
+ {
+  "id": "depistage-colorectal",
+  "libelle": "Requête — dépistage (recherche de sang dans les selles)",
+  "source": "document_source",
+  "statut_validation": "a_valider",
+  "declencheur": {
+   "type": "profil",
+   "criteres": [
+    "age entre 50 et 75 ans",
+    "sans épisode de soin (ouvert ou fermé) de polype du côlon, cancer du côlon, sigmoïde ou rectum",
+    "sans antécédent familial 1er degré de polype ou de cancer",
+    "sans CR de coloscopie de moins de 5 ans",
+    "sans élément de suivi de coloscopie de moins de 5 ans"
+   ]
+  },
+  "entretien": [
+   {
+    "prescrire": "Recherche de sang dans les selles",
+    "canal": "prevention",
+    "periodicite": {
+     "min": 2,
+     "unite": "an"
+    }
+   }
+  ]
+ },
+ {
+  "id": "diabete-hba1c-sup-7",
+  "libelle": "Règle diabète HbA1c > 7 %",
+  "source": "document_source",
+  "statut_validation": "a_valider",
+  "declencheur": {
+   "type": "pathologie",
+   "criteres": [
+    "HbA1c > 7 %"
+   ]
+  },
+  "entretien": [
+   {
+    "chercher": "Hémoglobine",
+    "prescrire": "NFS",
+    "periodicite": {
+     "min": 1,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "HbA1c",
+    "prescrire": "HbA1c",
+    "periodicite": {
+     "min": 3,
+     "unite": "mois"
+    }
+   },
+   {
+    "chercher": "Chol total",
+    "prescrire": "EAL",
+    "periodicite": {
+     "min": 1,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "SGOT",
+    "prescrire": "SGOT",
+    "periodicite": {
+     "min": 1,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "SGPT",
+    "prescrire": "SGPT",
+    "periodicite": {
+     "min": 1,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "Gamma GT",
+    "prescrire": "Gamma GT",
+    "periodicite": {
+     "min": 1,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "TP",
+    "prescrire": "TP",
+    "periodicite": {
+     "min": 1,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "Clairance de la créatinine CKD-EPI",
+    "prescrire": "Clairance de la créatinine",
+    "periodicite": {
+     "min": 1,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "RAC",
+    "prescrire": "RAC",
+    "periodicite": {
+     "min": 1,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "ECG dans ES et doc",
+    "prescrire": "ECG",
+    "canal": "prevention",
+    "periodicite": {
+     "min": 1,
+     "unite": "an"
+    }
+   }
+  ]
+ },
+ {
+  "id": "iec-ara2",
+  "libelle": "Patients sous IEC ou ARA2",
+  "source": "document_source",
+  "statut_validation": "a_valider",
+  "declencheur": {
+   "type": "medicament",
+   "atc": [
+    "C09",
+    "C09C"
+   ]
+  },
+  "instauration": [
+   {
+    "prescrire": "Ionogramme (Na, K)",
+    "periodicite_texte": "Dans 2 à 4 semaines puis 1 an",
+    "jalons": [
+     "S2-4",
+     "M12"
+    ]
+   },
+   {
+    "prescrire": "Créatinine",
+    "periodicite_texte": "Dans 2 à 4 semaines puis 1 an",
+    "jalons": [
+     "S2-4",
+     "M12"
+    ]
+   }
+  ],
+  "entretien": [
+   {
+    "chercher": "Sodium",
+    "prescrire": "Ionogramme",
+    "periodicite": {
+     "min": 1,
+     "max": 2,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "Créatinine",
+    "prescrire": "Clairance de la créatinine",
+    "periodicite": {
+     "min": 1,
+     "max": 2,
+     "unite": "an"
+    }
+   },
+   {
+    "chercher": "Microalbuminurie",
+    "prescrire": null,
+    "periodicite": {
+     "min": 1,
+     "max": 2,
+     "unite": "an"
+    }
+   }
+  ]
+ },
+ {
+  "id": "lamotrigine",
+  "libelle": "Patient sous lamotrigine",
+  "source": "document_source",
+  "statut_validation": "a_valider",
+  "declencheur": {
+   "type": "medicament",
+   "atc": [
+    "N03AX09"
+   ]
+  },
+  "instauration": [
+   {
+    "prescrire": "NFS",
+    "jalons": [
+     "T0",
+     "M12"
+    ]
+   },
+   {
+    "prescrire": "Ionogramme",
+    "jalons": [
+     "T0",
+     "M12"
+    ]
+   },
+   {
+    "prescrire": "Glycémie",
+    "jalons": [
+     "T0",
+     "M6",
+     "M12"
+    ]
+   },
+   {
+    "prescrire": "EAL",
+    "jalons": [
+     "T0",
+     "M12"
+    ]
+   },
+   {
+    "prescrire": "Bilan hépatique",
+    "jalons": [
+     "T0",
+     "M12"
+    ]
+   },
+   {
+    "prescrire": "Créatinine / Clairance de la créatinine",
+    "jalons": [
+     "T0",
+     "M12"
+    ]
+   }
+  ],
+  "entretien": [
+   {
+    "chercher": "Hémoglobine",
+    "prescrire": "NFS",
+    "periodicite": {
+     "min": 12,
+     "unite": "mois"
+    }
+   },
+   {
+    "chercher": "Sodium",
+    "prescrire": "Ionogramme",
+    "periodicite": {
+     "min": 12,
+     "unite": "mois"
+    }
+   },
+   {
+    "chercher": "Glycémie",
+    "prescrire": "Glycémie",
+    "periodicite": {
+     "min": 12,
+     "unite": "mois"
+    }
+   },
+   {
+    "chercher": "Chol LDL",
+    "prescrire": "EAL",
+    "periodicite": {
+     "min": 12,
+     "unite": "mois"
+    }
+   },
+   {
+    "chercher": "SGOT",
+    "prescrire": "Bilan hépatique",
+    "periodicite": {
+     "min": 12,
+     "unite": "mois"
+    }
+   },
+   {
+    "chercher": "Clairance de la créatinine",
+    "prescrire": "Clairance de la créatinine",
+    "periodicite": {
+     "min": 12,
+     "unite": "mois"
+    }
+   }
+  ]
+ }
+];
+</script>
+<script>
+/* ===== Utilitaires ===== */
+const DAY=864e5, UNIT={semaine:7,mois:30.4375,an:365.25};
+const addDays=(s,n)=>new Date(new Date(s+'T00:00:00Z').getTime()+Math.round(n)*DAY).toISOString().slice(0,10);
+const diffDays=(a,b)=>Math.round((new Date(b)-new Date(a))/DAY);
+const fr=s=>s?s.split('-').reverse().join('/'):'';
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/cholesterol/g,'chol').replace(/\s+/g,' ').trim();
+const nk=s=>norm(s.replace(/\(.*?\)/g,''));
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const perDays=p=>Math.round(p.min*UNIT[p.unite]);
+function fmtPer(d){const y=d/365.25;if(d>=330&&Math.abs(y-Math.round(y))<.05){const n=Math.round(y);return n+' an'+(n>1?'s':'')}
+ const m=d/30.4375;if(m>=1.5||Math.abs(m-Math.round(m))<.1&&m>=1)return Math.round(m)+' mois';return Math.round(d/7)+' sem'}
+function parsePer(t){const m=/^\s*(\d+(?:[.,]\d+)?)\s*(sem|mois|an)/i.exec(t||'');if(!m)return null;
+ return Math.round(parseFloat(m[1].replace(',','.'))*({sem:7,mois:30.4375,an:365.25}[m[2].toLowerCase()]))}
+const jalDays=j=>j==='T0'?0:j[0]==='M'?Math.round(+j.slice(1)*30.4375):+j.slice(1).split('-')[0]*7;
+const ruleById=id=>RULES.find(r=>r.id===id);
+const RULES=window.REGLES;
+
+/* ===== État (patient fictif d'après les captures) ===== */
+const DRUGS=[{label:'Lamotrigine',atc:'N03AX09'},{label:'Médicament ATC C09 (exemple de maquette)',atc:'C09'},{label:'Médicament ATC C09C (exemple de maquette)',atc:'C09C'}];
+function initial(){return{
+ today:'2026-11-18',naissance:'1980-11-12',policy:'min',tab:'dossier',toast:null,
+ episodes:[{d:'2025-08-24',l:'Tabagisme'},{d:'2025-09-04',l:'Diabète de type 2'},{d:'2026-11-12',l:'Coronaropathie'}],
+ atcdFam:[{l:'Emphysème du poumon',lien:'Grand-oncle m.'},{l:'Lymphome cérébral',lien:'Grand-père'}],
+ coloscopieCR:null,
+ traitements:[{label:'OPTICRON 2% COL UNIDOSE 30',atc:null,debut:'2026-11-13'},{label:'SIMVASTATINE 20MG EVOL CPR SEC 28',atc:null,debut:'2026-09-02'},{label:'AERIUS 5MG CPR 30',atc:null,debut:'2026-11-13'},{label:'NASONEX 50MCG/DOSE PULV 140',atc:null,debut:'2026-11-13'}],
+ suivi:[{date:'2026-10-26',lib:'IMC',val:16.6,unit:'kg/m²'},{date:'2026-10-26',lib:'Poids',val:60,unit:'kg'},
+  {date:'2026-08-08',lib:'HbA1c',val:7.2,unit:'%',hi:1},{date:'2026-04-01',lib:'HbA1c',val:8,unit:'%',hi:1},
+  {date:'2025-11-12',lib:'Cholestérol HDL',val:0.8,unit:'g/l'},{date:'2025-11-12',lib:'Cholestérol total',val:3,unit:'g/l',hi:1},
+  {date:'2025-11-12',lib:'Cholestérol LDL',val:1.5,unit:'g/l'},{date:'2025-06-01',lib:'Hémoglobine',val:12.2,unit:'g/100ml'},
+  {date:'2025-11-12',lib:'PAS/PAD',val:'170/100',unit:'mmHg'}],
+ patientPer:{},ovr:{},prescrit:{},log:[],hprimDone:false};}
+let S=initial();
+
+/* ===== Moteur ===== */
+const PRESC2CH={}, CH2PRESC=[];
+RULES.forEach(r=>(r.entretien||[]).forEach(it=>{if(it.prescrire&&it.chercher){(PRESC2CH[nk(it.prescrire)]??=[]).push(it.chercher);CH2PRESC.push([it.chercher,it.prescrire])}}));
+const keyForLabel=l=>{const n=norm(l);const f=CH2PRESC.find(([c])=>{const m=norm(c);return n===m||n.startsWith(m)||m.startsWith(n)});return f?nk(f[1]):nk(l)};
+const age=()=>{const t=new Date(S.today),b=new Date(S.naissance);let a=t.getUTCFullYear()-b.getUTCFullYear();if(t.getUTCMonth()<b.getUTCMonth()||(t.getUTCMonth()===b.getUTCMonth()&&t.getUTCDate()<b.getUTCDate()))a--;return a};
+const lastOf=labels=>{const ns=labels.map(norm);return S.suivi.filter(x=>ns.some(n=>{const m=norm(x.lib);return m===n||m.startsWith(n)||n.startsWith(m)})).sort((a,b)=>b.date.localeCompare(a.date))[0]};
+function evalRule(r){const t=r.declencheur;
+ if(t.type==='medicament'){const tr=S.traitements.find(x=>x.atc&&t.atc.some(a=>x.atc.startsWith(a)));
+  return tr?{ok:true,treat:tr,crit:[{t:`Traitement en cours : ${tr.label} (ATC ${tr.atc})`,ok:true}]}:{ok:false,crit:[{t:`Aucun traitement de classe ATC ${t.atc.join(' / ')}`,ok:false}]}}
+ if(t.type==='pathologie'){const h=lastOf(['HbA1c']);const ok=!!h&&+h.val>7;
+  return{ok,crit:[{t:h?`Dernière HbA1c : ${h.val} ${h.unit} (${fr(h.date)}) — seuil > 7 %`:'Aucune HbA1c enregistrée',ok}]}}
+ if(r.id==='depistage-colorectal'){const a=age(),has=re=>S.episodes.some(e=>re.test(e.l)),cr=S.coloscopieCR&&diffDays(S.coloscopieCR,S.today)<5*365.25;
+  const c=[[`Âge entre 50 et 75 ans (patient : ${a} ans)`,a>=50&&a<=75],['Pas d\'épisode de soin polype / cancer côlon-sigmoïde-rectum',!has(/polype|colon|côlon|sigmo|rect/i)],
+   ['Pas d\'ATCD familial 1ᵉʳ degré de polype ou cancer',!S.atcdFam.some(x=>/polype|colon|côlon|rect/i.test(x.l)&&/père|mère|frère|sœur|soeur|enfant/i.test(x.lien))],
+   ['Pas de CR de coloscopie de moins de 5 ans',!cr],['Pas d\'élément de suivi coloscopie de moins de 5 ans',!lastOf(['Coloscopie'])]].map(([t,ok])=>({t,ok}));
+  return{ok:c.every(x=>x.ok),crit:c}}
+ return{ok:false,crit:[]}}
+function compute(){
+ const ev=RULES.map(r=>({r,ev:evalRule(r)})),map={};
+ const ensure=(lab,canal)=>map[nk(lab)]??={key:nk(lab),label:lab,canal,srcs:[]};
+ for(const{r,ev:e}of ev){if(!e.ok)continue;
+  const inst=r.declencheur.type==='medicament'&&S.today<addDays(e.treat.debut,365.25);
+  if(inst)(r.instauration||[]).forEach(it=>ensure(it.prescrire,'biologie').srcs.push({r,phase:'instauration',jal:it.jalons,start:e.treat.debut}));
+  else(r.entretien||[]).forEach((it,i)=>{if(!it.prescrire)return;const k=r.id+'|'+i,ov=S.ovr[k],d=ov??perDays(it.periodicite);
+   ensure(it.prescrire,it.canal||'biologie').srcs.push({r,phase:'entretien',days:d,livre:perDays(it.periodicite),mod:ov!=null,ch:it.chercher})})}
+ const rows=Object.values(map);
+ for(const w of rows){const labels=[...new Set([...w.srcs.map(s=>s.ch).filter(Boolean),...(PRESC2CH[w.key]||[]),w.label])];
+  w.last=lastOf(labels);const per=w.srcs.filter(s=>s.days).map(s=>s.days),pat=S.patientPer[w.key];w.pat=pat;
+  let pd=per.slice();if(pat!=null)pd=S.policy==='patient'?[pat]:[...pd,pat];
+  const c=[];w.never=false;
+  if(pd.length){w.days=Math.min(...pd);if(w.last)c.push(addDays(w.last.date,w.days));else{c.push(S.today);w.never=true}}
+  w.jal=[];for(const s of w.srcs.filter(s=>s.jal)){const ds=s.jal.map(j=>addDays(s.start,jalDays(j)));w.jal.push(...s.jal.map((j,i)=>j+' ('+fr(ds[i])+')'));
+   const nx=ds.find(d=>!w.last||w.last.date<addDays(d,-30));if(nx)c.push(nx);else w.planDone=true;if(nx&&!w.last)w.never=true}
+  w.due=c.length?c.sort()[0]:null;
+  const pr=S.prescrit[w.key];w.prescrit=pr&&(!w.last||w.last.date<pr)?pr:null;
+  w.st=!w.due?'na':w.prescrit?'presc':w.due<=S.today?'late':w.due<=addDays(S.today,30)?'soon':'ok'}
+ rows.sort((a,b)=>(a.due||'9').localeCompare(b.due||'9'));
+ return{ev,rows,bio:rows.filter(x=>x.canal==='biologie'),prev:rows.filter(x=>x.canal==='prevention')}}
+const pending=C=>C.bio.filter(x=>x.st==='late');
+const STL={late:'En retard',soon:'Bientôt',ok:'À jour',presc:'Prescrit',na:'Plan 1ʳᵉ année réalisé'};
+const pill=w=>`<span class="pill ${w.st}">${w.st==='late'&&w.never?'Jamais fait':STL[w.st]}</span>`;
+const srcTags=w=>w.srcs.map(s=>`<span class="src ${s.mod?'mod':''}" title="${esc(s.r.libelle)} — ${s.phase}${s.mod?' (périodicité corrigée)':''}">${esc(s.r.libelle.replace(/^(Patients? sous |Règle |Requête — )/,''))}${s.phase==='instauration'?' · instauration':''}</span>`).join('');
+const perCell=w=>[w.jal.length?'Jalons : '+w.jal.join(', '):'',w.days?'tous les '+fmtPer(w.days)+(w.pat!=null?` <span class="m">(patient : ${fmtPer(w.pat)})</span>`:''):''].filter(Boolean).join('<br>');
+
+/* ===== Actions ===== */
+function instaurer(i){const d=DRUGS[i];S.traitements.unshift({label:d.label.toUpperCase(),atc:d.atc,debut:S.today,neuf:true});
+ const C=compute(),r=C.ev.find(x=>x.ev.ok&&x.ev.treat&&x.ev.treat.atc===d.atc&&x.ev.treat.neuf);
+ const n=C.bio.filter(w=>w.srcs.some(s=>s.start===S.today&&s.phase==='instauration')).length;
+ S.toast=r?`Une règle existe pour ce traitement (« ${r.r.libelle} ») — la ligne est colorée ; la table de prescription biologique a été renseignée avec ${n} élément(s) (plan de la 1ʳᵉ année).`:null;render()}
+function prescrire(keys,man){const dd=S.today;keys.forEach(k=>S.prescrit[k]=dd);
+ S.log.unshift(`${fr(dd)} — Prescription biologique : ${keys.map(k=>compute().rows.find(w=>w.key===k)?.label||k).concat(man?[man]:[]).join(', ')}`);S.toast='Prescription validée ('+keys.length+' élément(s)).';S.tab='dossier';render()}
+
+/* ===== Vues ===== */
+const TABS=[['dossier','Dossier patient'],['plan','Plan de soins'],['presc','Prescription biologique'],['hprim','Intégration HPRIM'],['regles','Règles']];
+function render(){const C=compute(),np=pending(C).length;
+ document.getElementById('sim').innerHTML=`<b>Simulateur</b>
+ <label>Date du jour <input type="date" value="${S.today}" onchange="S.today=this.value;S.toast=null;render()"></label>
+ <label>Naissance <input type="date" value="${S.naissance}" onchange="S.naissance=this.value;render()"> (${age()} ans)</label>
+ <label>Périodicité saisie pour le patient <select onchange="S.policy=this.value;render()"><option value="min" ${S.policy==='min'?'selected':''}>retenir la plus courte (v0)</option><option value="patient" ${S.policy==='patient'?'selected':''}>prime sur la règle</option></select></label>
+ <label>Instaurer <select id="drug">${DRUGS.map((d,i)=>`<option value="${i}">${esc(d.label)}</option>`).join('')}</select><button onclick="instaurer(+document.getElementById('drug').value)">Instaurer</button></label>
+ <button onclick="if(confirm('Réinitialiser la maquette ?')){S=initial();render()}">Réinitialiser</button>`;
+ document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<div class="tab ${S.tab===k?'on':''}" onclick="S.tab='${k}';render()">${l}${k==='presc'&&np?`<span class="badge">${np}</span>`:''}</div>`).join('');
+ const v={dossier:vDossier,plan:vPlan,presc:vPresc,hprim:vHprim,regles:vRegles}[S.tab](C);
+ const toast=S.toast?`<div class="toast">${esc(S.toast)} <a href="#" onclick="S.toast=null;render();return false">✕</a></div>`:'';
+ document.getElementById('main').innerHTML=toast+v}
+
+function bannerPending(C){const n=pending(C).length;return n?`<div class="alert"><span><b>${n} prescription(s) biologique(s) en attente</b> — éléments de suivi dont le délai est dépassé.</span><button class="pri" onclick="S.tab='presc';render()">Ouvrir la prescription</button></div>`:''}
+function vDossier(C){
+ const trs=S.traitements.map(t=>{const hit=C.ev.find(x=>x.ev.ok&&x.ev.treat===t);return`<tr class="${hit?'rowhl':''}"><td>${fr(t.debut)}</td><td>${esc(t.label)}${hit?`<br><span class="src">Règle : ${esc(hit.r.libelle)}</span>`:''}</td></tr>`}).join('');
+ const sv=[...S.suivi].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<tr><td>${fr(x.date)}</td><td class="${x.hi?'r':''}">${esc(x.lib)}</td><td class="num ${x.hi?'r':''}">${esc(x.val)}</td><td>${esc(x.unit)}</td><td>${x.prochain?fr(x.prochain):''}</td></tr>`).join('');
+ const prev=C.prev.map(w=>`<tr><td>${esc(w.label)}</td><td>${w.due?fr(w.due):''}</td><td>${pill(w)}</td></tr>`).join('')||'<tr><td colspan=3 class="m">Aucun élément non biologique proposé</td></tr>';
+ return bannerPending(C)+`<div class="grid">
+ <div class="pn"><h4 class="h-cy">Identité</h4><table><tr><td>Né(e) le</td><td>${fr(S.naissance)} (${age()} ans)</td></tr><tr><td>Patient</td><td>DOE John — fictif</td></tr></table></div>
+ <div class="pn"><h4 class="h-sage">Épisodes et suivis en cours</h4><table>${S.episodes.map(e=>`<tr><td>${fr(e.d)}</td><td>${esc(e.l)}</td></tr>`).join('')}</table></div>
+ <div class="pn"><h4 class="h-lav">Traitements</h4><table><tr><th>Début</th><th>Traitement</th></tr>${trs}</table></div>
+ <div class="pn"><h4 class="h-lav">Éléments de suivi (Biologie)</h4><div class="scroll"><table><tr><th>Date</th><th>Examen</th><th>Valeur</th><th>Unité</th><th>Prochain</th></tr>${sv}</table></div></div>
+ <div class="pn"><h4 class="h-lav">Prévention — examens et consultations proposés par le plan</h4><table><tr><th>Examen</th><th>Échéance</th><th></th></tr>${prev}</table></div>
+ <div class="pn"><h4 class="h-sage">Contacts (cette session)</h4><div style="padding:6px 8px">${S.log.length?S.log.map(esc).join('<br>'):'<span class="m">—</span>'}</div></div></div>`}
+
+function vPlan(C){
+ const rows=C.bio.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?`${fr(w.last.date)} — ${esc(w.last.val)} ${esc(w.last.unit)}`:'<span class="m">aucun résultat</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}${w.prescrit?`<br><span class="m">le ${fr(w.prescrit)}</span>`:''}</td></tr>`).join('');
+ const rowsP=C.prev.map(w=>`<tr><td><b>${esc(w.label)}</b></td><td>${srcTags(w)}</td><td>${perCell(w)}</td><td>${w.last?fr(w.last.date):'<span class="m">—</span>'}</td><td>${w.due?fr(w.due):'—'}</td><td>${pill(w)}</td></tr>`).join('');
+ const rl=C.ev.map(({r,ev})=>`<div style="margin:4px 0"><span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'Déclenchée':'Non déclenchée'}</span> <b>${esc(r.libelle)}</b><ul class="crit" style="margin:2px 0 0 18px;padding:0">${ev.crit.map(c=>`<li class="${c.ok?'yes':'no'}">${c.ok?'✔':'✘'} ${esc(c.t)}</li>`).join('')}</ul></div>`).join('');
+ return bannerPending(C)+`<h3>Plan de soins — biologie</h3><div class="scroll"><table><tr><th>Élément à prescrire</th><th>Règles à l'origine</th><th>Périodicité retenue</th><th>Dernier résultat (éléments de suivi)</th><th>Échéance</th><th>Statut</th></tr>${rows||'<tr><td colspan=6 class="m">Aucune règle déclenchée</td></tr>'}</table></div>
+ <div class="note"><b>Fusion :</b> quand plusieurs règles concernent le même élément, on retient la période la plus courte (document) ; la périodicité saisie pour le patient est prise en compte selon le réglage du simulateur. Le <b>dernier résultat</b> est lu dans les éléments de suivi — pas de source parallèle. Cadre orange = périodicité corrigée par l'utilisateur.</div>
+ <h3>Plan de prévention — éléments non biologiques</h3><div class="scroll"><table><tr><th>Examen</th><th>Règles à l'origine</th><th>Périodicité</th><th>Dernier fait</th><th>Échéance</th><th>Statut</th></tr>${rowsP||'<tr><td colspan=6 class="m">—</td></tr>'}</table></div>
+ <div class="note q"><b>À valider :</b> le classement « non biologique » (ECG, recherche de sang dans les selles) est une hypothèse de la maquette, d'après vos captures (ces examens figurent dans Prévention).</div>
+ <h3>Évaluation des règles pour ce patient</h3>${rl}`}
+
+function vPresc(C){
+ const rows=C.bio.filter(w=>w.due&&w.due<=addDays(S.today,365)&&!w.prescrit);
+ const body=rows.map(w=>`<tr><td><input type="checkbox" class="pk" value="${w.key}" ${w.st==='late'?'checked':''}></td><td><b>${esc(w.label)}</b></td><td>${pill(w)}</td><td>${w.due<=S.today?'<b>maintenant</b>':'le '+fr(w.due)}</td><td>${w.last?`${fr(w.last.date)} — ${esc(w.last.val)} ${esc(w.last.unit)}`:'<span class="m">jamais</span>'}</td><td>${srcTags(w)}</td></tr>`).join('');
+ return`<h3>Prescription de biologie — proposée pour l'année à venir (à jour des délais)</h3>
+ <p class="m">Ouverture depuis n'importe quel motif de consultation. Les éléments en retard sont pré-cochés ; les autres sont à venir dans les 12 mois.</p>
+ <table><tr><th></th><th>Examen</th><th>Statut</th><th>À réaliser</th><th>Dernier résultat</th><th>Règles</th></tr>${body||'<tr><td colspan=6 class="m">Rien à proposer.</td></tr>'}</table>
+ <p><label>Compléter à la main : <input id="man" placeholder="ex. TSH" size="20"></label> <button disabled title="Hors périmètre de la maquette">Depuis l'historique…</button></p>
+ <p><button class="pri" onclick="prescrire([...document.querySelectorAll('.pk:checked')].map(x=>x.value),document.getElementById('man').value.trim())" ${rows.length||1?'':'disabled'}>Valider la prescription</button></p>`}
+
+const INCOMING=[['HBA1C','HbA1c',6.8,'%'],['HEMOGLOBINE','Hémoglobine',12.8,'g/100ml'],['CHOLESTEROL TOTAL','Cholestérol total',2.1,'g/l'],['ASAT (SGOT)','SGOT',24,'UI/l']];
+function vHprim(C){
+ if(S.hprimDone)return`<p class="m">Document déjà incorporé (maquette).</p>`;
+ const rows=INCOMING.map(([lab,x,v,u],i)=>{const k=keyForLabel(x),w=C.rows.find(r=>r.key===k),p=w&&w.days?addDays(S.today,w.days):'';
+  return`<tr><td><input type="checkbox" class="hk" value="${i}" checked></td><td>${esc(lab)}</td><td>${esc(x)}</td><td class="num">${v}</td><td>${esc(u)}</td><td><input type="date" id="pr${i}" data-p="${p}" value="${p}">${p?`<br><span class="m">proposé : ${w.srcs.map(s=>esc(s.r.libelle)).join(', ')}</span>`:'<br><span class="m">aucune règle</span>'}</td></tr>`}).join('');
+ return`<h3>Liste des documents reçus — résultat de biologie (valeurs fictives du <b>${fr(S.today)}</b>)</h3>
+ <table><tr><th></th><th>Libellé labo</th><th>Libellé XMed</th><th>Valeur</th><th>Unité</th><th>Prochain</th></tr>${rows}</table>
+ <div class="note">À l'incorporation, le <b>Prochain</b> est <b>présenté automatiquement</b> d'après le plan. Si vous le modifiez, l'écart est enregistré comme périodicité propre à ce patient (table de périodicité par patient).</div>
+ <div class="note q"><b>Cas à discuter :</b> si l'on incorpore HbA1c = 6,8 % (≤ 7 %), la règle « diabète HbA1c > 7 % » ne se déclenche plus : le suivi de l'HbA1c disparaît du plan. Une règle « diabète » sans seuil, ou une seconde règle pour HbA1c ≤ 7 %, est-elle voulue ?</div>
+ <p><button class="pri" onclick="incorporer()">Incorporer</button></p>`}
+function incorporer(){const C=compute();
+ [...document.querySelectorAll('.hk:checked')].forEach(c=>{const i=+c.value,[lab,x,v,u]=INCOMING[i],el=document.getElementById('pr'+i),p=el.dataset.p,val=el.value,k=keyForLabel(x);
+  S.suivi.push({date:S.today,lib:x,val:v,unit:u,prochain:val||undefined});
+  if(val&&p&&val!==p){S.patientPer[k]=diffDays(S.today,val)}});
+ S.hprimDone=true;S.toast='Résultats incorporés dans les éléments de suivi'+(Object.keys(S.patientPer).length?' ; périodicité(s) propre(s) au patient enregistrée(s).':'.');S.tab='plan';render()}
+
+function vRegles(C){
+ return`<p class="m">Les règles sont <b>livrées</b> (colonne de gauche, jamais modifiée) ; l'utilisateur saisit une périodicité <b>corrigée</b> (ex. « 6 mois », « 2 ans »). Le bouton « Restaurer » revient à la règle d'origine (droit au remords).</p>`+C.ev.map(({r,ev})=>{
+  const it=(r.entretien||[]).map((e,i)=>{const k=r.id+'|'+i,ov=S.ovr[k];
+   return`<tr><td>${esc(e.chercher||'—')}</td><td>${e.prescrire?esc(e.prescrire):'<span class="r">à compléter (gabarit vide dans le document)</span>'}${e.canal==='prevention'?' <span class="src">prévention</span>':''}</td><td>${fmtPer(perDays(e.periodicite))}${e.periodicite.max?` <span class="m">(document : ${e.periodicite.min} à ${e.periodicite.max} ${e.periodicite.unite}s ; borne basse retenue)</span>`:''}</td>
+   <td><input size="9" placeholder="—" value="${ov!=null?fmtPer(ov):''}" ${e.prescrire?'':'disabled'} onchange="const d=parsePer(this.value);if(d)S.ovr['${k}']=d;else delete S.ovr['${k}'];render()"> ${ov!=null?`<button onclick="delete S.ovr['${k}'];render()">Restaurer</button>`:''}</td></tr>`}).join('');
+  const ins=(r.instauration||[]).map(e=>`<tr><td>${esc(e.prescrire)}</td><td>${esc(e.periodicite_texte||e.jalons.join(', '))}</td></tr>`).join('');
+  return`<div class="rule"><header><b>${esc(r.libelle)}</b><span>Déclencheur : ${r.declencheur.type}${r.declencheur.atc?' · ATC '+r.declencheur.atc.join(', '):''} · <span class="pill ${r.statut_validation==='valide'?'ok':'soon'}">${r.statut_validation==='valide'?'validée':'à valider'}</span> <span class="pill ${ev.ok?'ok':'na'}">${ev.ok?'active pour ce patient':'inactive'}</span></span></header>
+  <div style="padding:6px 10px">${r.declencheur.criteres?`<div class="m">Critères : ${r.declencheur.criteres.map(esc).join(' · ')}</div>`:''}
+  ${ins?`<h4 style="margin:8px 0 2px">À l'instauration / changement de posologie</h4><table><tr><th>À prescrire</th><th>Plan 1ʳᵉ année</th></tr>${ins}</table>`:''}
+  <h4 style="margin:8px 0 2px">${ins?'Après 1 an':'Suivi'}</h4><table><tr><th>Élément à chercher</th><th>À prescrire</th><th>Périodicité livrée</th><th>Périodicité corrigée</th></tr>${it}</table></div></div>`}).join('')}
+render();
+</script>
+</body>
+</html>

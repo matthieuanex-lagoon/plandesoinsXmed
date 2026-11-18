@@ -15,4 +15,4 @@ entretien:                    # periodicite_corrigee : vide (renseignée par l'u
   - {chercher: TP, prescrire: TP, periodicite: {min: 1, unite: an}}
   - {chercher: Clairance de la créatinine CKD-EPI, prescrire: Clairance de la créatinine, periodicite: {min: 1, unite: an}}
   - {chercher: RAC, prescrire: RAC, periodicite: {min: 1, unite: an}}
-  - {chercher: ECG dans ES et doc, prescrire: ECG, periodicite: {min: 1, unite: an}}  # non biologique : A VALIDER
+  - {chercher: ECG dans ES et doc, prescrire: ECG, canal: prevention, periodicite: {min: 1, unite: an}}  # non biologique : A VALIDER

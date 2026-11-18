@@ -8,8 +8,10 @@ declencheur:
 instauration:               # à l'instauration ou changement de posologie
   - prescrire: Ionogramme (Na, K)
     periodicite_texte: Dans 2 à 4 semaines puis 1 an
+    jalons: [S2-4, M12]      # S = semaines après instauration ; la maquette prend la borne basse
   - prescrire: Créatinine
     periodicite_texte: Dans 2 à 4 semaines puis 1 an
+    jalons: [S2-4, M12]
 entretien:                  # après 1 an
   - chercher: Sodium
     prescrire: Ionogramme
@@ -18,5 +20,5 @@ entretien:                  # après 1 an
     prescrire: Clairance de la créatinine
     periodicite: {min: 1, max: 2, unite: an}
   - chercher: Microalbuminurie
-    prescrire: "A VALIDER (gabarit non rempli dans le document : « Eléments à prescrire »)"
+    prescrire: null          # A VALIDER : gabarit non rempli dans le document (« Eléments à prescrire »)
     periodicite: {min: 1, max: 2, unite: an}

@@ -14,6 +14,9 @@ prescription biologique.
 | `docs/00-comprehension.md` | Ce que dit le document, reformulé, + questions ouvertes |
 | `docs/01-specification.md` | Spécification fonctionnelle (v0, à discuter) |
 | `docs/02-modele-donnees.md` | Modèle de données et algorithme de fusion des règles |
+| `docs/03-maquette.md` | Maquette interactive : mode d'emploi, scénarios, hypothèses |
+| `maquette/maquette-autonome.html` | **La maquette** (un seul fichier, ouvrir dans un navigateur) |
+| `tools/build_maquette_data.py` | Valide les règles YAML et régénère les données de la maquette |
 | `regles/schema.json` | Format d'une règle (JSON Schema) |
 | `regles/*.yaml` | Les 4 exemples du document, transcrits tels quels |
 

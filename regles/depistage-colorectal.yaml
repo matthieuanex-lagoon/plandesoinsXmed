@@ -12,4 +12,5 @@ declencheur:
     - sans élément de suivi de coloscopie de moins de 5 ans
 entretien:
   - prescrire: Recherche de sang dans les selles
+    canal: prevention       # A VALIDER : figure dans « Prévention » sur les captures XMed
     periodicite: {min: 2, unite: an}

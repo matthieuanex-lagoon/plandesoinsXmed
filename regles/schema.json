@@ -34,7 +34,7 @@
       "type": "object", "required": ["prescrire"],
       "properties": {
         "prescrire": {"type": "string"},
-        "jalons": {"type": "array", "items": {"type": "string"}},
+        "jalons": {"type": "array", "items": {"type": "string", "pattern": "^(T0|M[0-9]+|S[0-9]+(-[0-9]+)?)$"}},
         "periodicite_texte": {"type": "string"}
       }
     },
@@ -42,7 +42,8 @@
       "type": "object", "required": ["prescrire", "periodicite"],
       "properties": {
         "chercher": {"type": "string"},
-        "prescrire": {"type": "string"},
+        "prescrire": {"type": ["string", "null"]},
+        "canal": {"type": "string", "enum": ["biologie", "prevention"], "default": "biologie"},
         "periodicite": {"$ref": "#/$defs/periodicite"},
         "periodicite_corrigee": {"$ref": "#/$defs/periodicite"}
       }
