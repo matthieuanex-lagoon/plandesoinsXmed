@@ -16,9 +16,12 @@ prescription biologique.
 | `docs/02-modele-donnees.md` | Modèle de données et algorithme de fusion des règles |
 | `docs/03-maquette.md` | Maquette interactive : mode d'emploi, scénarios, hypothèses |
 | `maquette/maquette-autonome.html` | **La maquette** (un seul fichier, ouvrir dans un navigateur) |
+| `generateur/index.html` | **Générateur de règles** (conditions ET/OU/NON → ordonnances, indicateurs de prévention) |
+| `docs/04-generateur.md` | Générateur : mode d'emploi, modèle, questions ouvertes |
 | `docs/xmed/` | Captures d'écran XMed de référence (dépôt privé) |
 | `tools/build_maquette_data.py` | Valide les règles YAML et régénère les données de la maquette |
 | `regles/schema.json` | Format d'une règle (JSON Schema) |
+| `regles/schema-v1.json`, `regles/v1/` | Format de règle produit par le générateur + 3 exemples |
 | `regles/*.yaml` | Les 4 exemples du document, transcrits tels quels |
 
 ## Principe de prudence

@@ -1,0 +1,52 @@
+{
+  "id": "diabete-suivi",
+  "libelle": "Diabète — suivi biologique",
+  "actif": true,
+  "statut_validation": "a_valider",
+  "evaluer_quand": [
+    "ouverture_dossier",
+    "integration_resultat",
+    "quotidien"
+  ],
+  "quand": {
+    "op": "ET",
+    "conditions": [
+      {
+        "type": "pathologie",
+        "libelle": "Diabète"
+      }
+    ]
+  },
+  "alors": [
+    {
+      "action": "ordonnance",
+      "categorie": "biologie",
+      "examens": [
+        "HbA1c"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 3,
+        "unite": "mois"
+      }
+    },
+    {
+      "action": "ordonnance",
+      "categorie": "biologie",
+      "examens": [
+        "NFS",
+        "Ionogramme",
+        "Créatinine",
+        "Protéinurie",
+        "Créatininurie",
+        "HbA1c",
+        "EAL"
+      ],
+      "frequence": {
+        "mode": "tous_les",
+        "valeur": 1,
+        "unite": "ans"
+      }
+    }
+  ]
+}
